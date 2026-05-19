@@ -10,16 +10,19 @@ const palette = {
 }
 
 const makeProducts = (prefix, names, specs) =>
-  names.map((name, index) => {
-    const spec = specs[index % specs.length]
+  Array.from({ length: 3 }, (_, batchIndex) =>
+    names.map((name, index) => {
+      const spec = specs[(index + batchIndex * 3) % specs.length]
+      const serial = batchIndex * names.length + index + 1
 
-    return {
-      id: `${prefix}-${index + 1}`,
-      name,
-      code: `${prefix.toUpperCase()}-${String(index + 1).padStart(2, "0")}`,
-      art: spec
-    }
-  })
+      return {
+        id: `${prefix}-${serial}`,
+        name,
+        code: `${prefix.toUpperCase()}-${String(serial).padStart(2, "0")}`,
+        art: spec
+      }
+    })
+  ).flat()
 
 const sharedSpecs = [
   { kind: "sheath", stroke: palette.blue, accent: palette.sky },

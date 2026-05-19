@@ -13,3 +13,13 @@ GREEN: npm run build -> PASS
 GREEN: Playwright local browser smoke check against http://127.0.0.1:4173 -> PASS
 
 GREEN: .gitignore follow-up update -> PASS, frontend demo ignore rules now cover build output, cache, coverage, and log files
+
+BDD: Full-bleed replica refinement -> Given the reference image uses no outer frame and a dense full-stage composition / When the desktop demo is rendered / Then the navigation icons should use a thin outline style, the legacy gallery heading block should be removed, and the content should fill the viewport without large left, right, or bottom gaps
+
+RED: npm test -- --run -> FAIL, full-bleed layout markers and outline tab icon markers were not present in the old page structure
+
+GREEN: npm test -- --run -> PASS
+
+GREEN: npm run build -> PASS
+
+GREEN: Playwright viewport verification screenshot output/playwright/full-bleed-home-v4.png -> PASS

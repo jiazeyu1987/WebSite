@@ -102,3 +102,5 @@ The following assets are not available in the workspace, so the demo uses code-d
 
 - 2026-05-19:
   - Expanded `.gitignore` for the frontend demo to also ignore coverage output, Vite cache files, and temporary log files.
+  - Refined the page to remove the outer frame, switch the top navigation icons to a thinner outline style, remove the legacy gallery heading block, and make the desktop layout fill the viewport more completely.
+  - Expanded each category gallery so the desktop grid can occupy the full main stage instead of leaving large blank space at the bottom.
