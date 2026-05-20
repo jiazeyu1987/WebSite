@@ -1,0 +1,232 @@
+{
+  "schema_version": 2,
+  "task_id": "5-20260520T012123",
+  "mode": "full",
+  "status": "completed",
+  "current_phase": null,
+  "phase_statuses": [
+    {
+      "phase_id": "P1",
+      "title": "Define workbook contract and validation model",
+      "status": "completed",
+      "objective": "Replace the current implicit demo data shape with an explicit workbook-backed configuration contract for company home, showrooms, and products.",
+      "owned_paths": [],
+      "dependencies": [],
+      "deliverables": [],
+      "evidence_expectation": "Parser tests and reviewed workbook schema documentation recorded in `execution-log.md`.",
+      "acceptance_criteria": [
+        {
+          "ac_id": "P1-AC1",
+          "text": "The codebase has a single documented configuration contract that covers company home, showrooms, and products, including Chinese and English media/text fields.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P1",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        },
+        {
+          "ac_id": "P1-AC2",
+          "text": "Workbook import validation stops immediately with explicit errors when required fields, relations, or media references are missing.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P1",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        },
+        {
+          "ac_id": "P1-AC3",
+          "text": "Workbook export writes the same agreed contract so an exported file can be re-imported without schema loss.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P1",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        }
+      ],
+      "evidence": [
+        "execution-log.md#Phase-P1"
+      ],
+      "notes": "- Workbook schema, runtime validation, and round-trip import/export contract implemented in src/config-schema.js, src/config-workbook.js, and src/demoData.js.",
+      "last_reviewed_at": "2026-05-20T06:33:01"
+    },
+    {
+      "phase_id": "P2",
+      "title": "Build admin console import/export flow",
+      "status": "completed",
+      "objective": "Add an admin UI surface that can import a workbook into runtime state and export the current state back to the agreed workbook shape.",
+      "owned_paths": [],
+      "dependencies": [],
+      "deliverables": [],
+      "evidence_expectation": "Focused unit tests plus browser evidence of import/export actions recorded in `execution-log.md` and `test-report.md`.",
+      "acceptance_criteria": [
+        {
+          "ac_id": "P2-AC1",
+          "text": "The frontend exposes an admin console page with one-click import and one-click export actions.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P2",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        },
+        {
+          "ac_id": "P2-AC2",
+          "text": "Importing a valid workbook updates runtime configuration for the current session without manual code edits.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P2",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        },
+        {
+          "ac_id": "P2-AC3",
+          "text": "Import failures surface explicit validation errors and do not partially apply invalid data.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P2",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        }
+      ],
+      "evidence": [
+        "execution-log.md#Phase-P2"
+      ],
+      "notes": "- Admin console import/export flow implemented in src/app.js and src/admin-console.js with explicit error handling and file download support.",
+      "last_reviewed_at": "2026-05-20T06:33:10"
+    },
+    {
+      "phase_id": "P3",
+      "title": "Generate homepage, showroom, and product views from config",
+      "status": "completed",
+      "objective": "Render the visitor-facing frontend from imported configuration instead of hardcoded content.",
+      "owned_paths": [],
+      "dependencies": [],
+      "deliverables": [],
+      "evidence_expectation": "Rendering tests and Playwright screenshots or traces recorded in `execution-log.md` and `test-report.md`.",
+      "acceptance_criteria": [
+        {
+          "ac_id": "P3-AC1",
+          "text": "The company homepage image and bilingual media/text fields render from imported configuration.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P3",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        },
+        {
+          "ac_id": "P3-AC2",
+          "text": "Showroom names, showroom images, product lists, and product media/text fields render from imported configuration.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P3",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        },
+        {
+          "ac_id": "P3-AC3",
+          "text": "The visitor-facing UI no longer requires hardcoded showroom/product content to display the configured experience.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P3",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        }
+      ],
+      "evidence": [
+        "execution-log.md#Phase-P3"
+      ],
+      "notes": "- Homepage, showroom view, and product detail rendering now come from imported config in src/app.js and src/demoData.js.",
+      "last_reviewed_at": "2026-05-20T06:33:17"
+    },
+    {
+      "phase_id": "P4",
+      "title": "Verify with strict TDD evidence and real-browser coverage",
+      "status": "completed",
+      "objective": "Add regression coverage and browser proof for the workbook-driven experience.",
+      "owned_paths": [],
+      "dependencies": [],
+      "deliverables": [],
+      "evidence_expectation": "Verification commands and browser evidence recorded in `execution-log.md` and `test-report.md`.",
+      "acceptance_criteria": [
+        {
+          "ac_id": "P4-AC1",
+          "text": "Strict TDD evidence exists in `execution-log.md` with at least one RED and matching GREEN entry for the new config-driven behavior.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P4",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        },
+        {
+          "ac_id": "P4-AC2",
+          "text": "`npm test -- --run`, `npm run build`, and `npx playwright test` pass for the delivered scope.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P4",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        },
+        {
+          "ac_id": "P4-AC3",
+          "text": "The final test report includes independent browser verification evidence for the admin flow and the generated visitor-facing pages.",
+          "status": "completed",
+          "evidence": [
+            "execution-log.md#Phase-P4",
+            "test-report.md#Final-Verdict",
+            "output/playwright/admin-console-error.png",
+            "output/playwright/config-driven-showroom.png"
+          ]
+        }
+      ],
+      "evidence": [
+        "execution-log.md#Phase-P4"
+      ],
+      "notes": "- Vitest, Vite build, Playwright browser coverage, and frontend feature evidence all passed for the workbook-driven flow.",
+      "last_reviewed_at": "2026-05-20T06:33:27"
+    }
+  ],
+  "planner_review_status": "approved",
+  "test_status": "passed",
+  "blocking_prereqs": [],
+  "iteration_counts": {
+    "planner_revisions": 0,
+    "executor_loops": 4,
+    "test_loops": 1
+  },
+  "created_at": "2026-05-20T01:21:23",
+  "updated_at": "2026-05-20T06:35:34",
+  "branch": "main",
+  "baseline_revision": "a0dad38cf4a356ae1b6dfbb5fb53a3c89288926f",
+  "workspace_root": "D:\\ProjectPackage\\Website",
+  "tasks_root": "D:\\ProjectPackage\\Website\\doc\\tasks",
+  "task_dir": "D:\\ProjectPackage\\Website\\doc\\tasks\\5-20260520T012123",
+  "goal": "Scheduled admin console page with workbook import/export and config-driven company home, showroom, and product rendering.",
+  "artifacts": {
+    "prd": "D:\\ProjectPackage\\Website\\doc\\tasks\\5-20260520T012123\\prd.md",
+    "test_plan": "D:\\ProjectPackage\\Website\\doc\\tasks\\5-20260520T012123\\test-plan.md",
+    "task_state": "D:\\ProjectPackage\\Website\\doc\\tasks\\5-20260520T012123\\task-state.json",
+    "execution_log": "D:\\ProjectPackage\\Website\\doc\\tasks\\5-20260520T012123\\execution-log.md",
+    "test_report": "D:\\ProjectPackage\\Website\\doc\\tasks\\5-20260520T012123\\test-report.md"
+  }
+}

@@ -104,3 +104,10 @@ The following assets are not available in the workspace, so the demo uses code-d
   - Expanded `.gitignore` for the frontend demo to also ignore coverage output, Vite cache files, and temporary log files.
   - Refined the page to remove the outer frame, switch the top navigation icons to a thinner outline style, remove the legacy gallery heading block, and make the desktop layout fill the viewport more completely.
   - Expanded each category gallery so the desktop grid can occupy the full main stage instead of leaving large blank space at the bottom.
+  - Added portrait-only responsive rules so mobile or portrait layouts switch to a 4-column card wall with the explanation panel stacked below, while landscape tablet and large-screen layouts keep the existing horizontal split view.
+- 2026-05-20:
+  - Re-verified both landscape and portrait layouts against the supplied reference screenshots.
+  - Increased explanation-panel copy density so the reading area more closely matches the reference image rhythm, especially for the active home category.
+  - Added a Windows batch launcher so the demo can be started from a single `.bat` entry point with explicit prerequisite checks.
+  - Fixed the root Vite entry so `http://127.0.0.1:4173/` renders the reference kiosk page again instead of the unrelated configuration-driven showroom interface.
+  - Kept the newer showroom/config modules in the repo, but separated them from the homepage entry to avoid further homepage regressions.

@@ -1,7 +1,6 @@
-import "./style.css"
-import { createDemoApp } from "./app.js"
-import { categories } from "./demoData.js"
+import "./medical-kiosk.css"
+import { createMedicalKioskApp } from "./medical-kiosk.js"
 
 const root = document.getElementById("app")
 
-createDemoApp(root, categories, categories[0].id)
+createMedicalKioskApp(root)
