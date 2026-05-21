@@ -115,6 +115,52 @@ test("keeps the kiosk homepage on root and renders the bilingual showroom compan
   await expect(page.locator("[data-company-entry-card]")).toContainText("Yingtai Medical")
 })
 
+test("mobile showroom detail keeps image title and play action in the first screen", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload()
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/showroom")
+
+  await page.locator("[data-company-entry-card]").click()
+
+  const detailImage = page.locator(".showroom-detail__image")
+  const detailTitle = page.locator("[data-company-detail-title]")
+  const playButton = page.locator("[data-company-play]")
+  const fields = page.locator("[data-company-fields]")
+
+  await expect(detailImage).toBeInViewport()
+  await expect(detailTitle).toBeInViewport()
+  await expect(playButton).toBeInViewport()
+
+  const layout = await page.evaluate(() => {
+    const image = document.querySelector(".showroom-detail__image")
+    const title = document.querySelector("[data-company-detail-title]")
+    const play = document.querySelector("[data-company-play]")
+    const fields = document.querySelector("[data-company-fields]")
+
+    return {
+      imageBottom: image?.getBoundingClientRect().bottom ?? 0,
+      titleTop: title?.getBoundingClientRect().top ?? 0,
+      playTop: play?.getBoundingClientRect().top ?? 0,
+      fieldsTop: fields?.getBoundingClientRect().top ?? 0
+    }
+  })
+
+  expect(layout.titleTop).toBeGreaterThan(layout.imageBottom)
+  expect(layout.playTop).toBeGreaterThanOrEqual(layout.titleTop)
+  expect(layout.fieldsTop).toBeGreaterThan(layout.playTop)
+})
+
 test("fails fast on /showroom when company.publicFields is missing from the backend contract", async ({ page }) => {
   await page.route("**/showroom/display/app-config", async (route) => {
     const payload = createApiPayload()

@@ -153,6 +153,27 @@ describe("createShowroomConsumerApp", () => {
     expect(root.querySelector("[data-company-play-state]")?.textContent).toContain("Playing English narration")
   })
 
+  it("renders the company detail summary and play action before the public field list", async () => {
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createApiPayload()),
+      createAudio: vi.fn(() => createAudioController())
+    })
+    await flush()
+
+    root.querySelector("[data-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    const summary = root.querySelector("[data-company-detail-summary]")
+    const actions = root.querySelector("[data-company-detail-actions]")
+    const fields = root.querySelector("[data-company-fields]")
+
+    expect(summary).not.toBeNull()
+    expect(actions).not.toBeNull()
+    expect(root.querySelector("[data-company-play]")?.textContent).toContain("播放讲解")
+    expect(root.querySelector("[data-company-detail-copy]")?.textContent).toContain("公司中文讲解")
+    expect(summary?.compareDocumentPosition(fields) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(actions?.compareDocumentPosition(fields) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it("shows an explicit error state when company.publicFields is missing", async () => {
     const root = document.getElementById("app")
     const payload = createApiPayload()

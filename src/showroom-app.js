@@ -178,23 +178,26 @@ const createDetailMarkup = (company, state) => {
   return `
     <section class="showroom-screen showroom-screen--detail" data-screen="company-detail" data-company-detail>
       <div class="showroom-detail">
-        <div class="showroom-detail__media">
+        <div class="showroom-detail__media" data-company-detail-media>
           <img class="showroom-detail__image" src="${company.homeImage}" alt="${companyName}" />
         </div>
         <div class="showroom-detail__body">
-          <header class="showroom-detail__header">
-            <button class="showroom-back" type="button" data-company-back>${copy.backLabel}</button>
-            <p class="showroom-eyebrow">${copy.detailEyebrow}</p>
-            <h2 data-company-detail-title>${companyName}</h2>
-            <p class="showroom-copy" data-company-detail-copy>${companySubtitle}</p>
-          </header>
+          <section class="showroom-detail__summary" data-company-detail-summary>
+            <header class="showroom-detail__header">
+              <button class="showroom-back" type="button" data-company-back>${copy.backLabel}</button>
+              <p class="showroom-eyebrow">${copy.detailEyebrow}</p>
+              <h2 data-company-detail-title>${companyName}</h2>
+            </header>
 
-          <div class="showroom-detail__actions">
-            <button class="showroom-play" type="button" data-company-play>
-              ${state.playbackStatus === "playing" ? copy.pauseLabel : copy.playLabel}
-            </button>
-            <p class="showroom-play-state" data-company-play-state>${getPlaybackMessage(state)}</p>
-          </div>
+            <div class="showroom-detail__actions" data-company-detail-actions>
+              <button class="showroom-play" type="button" data-company-play>
+                ${state.playbackStatus === "playing" ? copy.pauseLabel : copy.playLabel}
+              </button>
+              <p class="showroom-play-state" data-company-play-state>${getPlaybackMessage(state)}</p>
+            </div>
+
+            <p class="showroom-copy" data-company-detail-copy>${companySubtitle}</p>
+          </section>
 
           ${
             company.publicFields.length > 0

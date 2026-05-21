@@ -48,6 +48,7 @@
 
 .showroom-header__copy,
 .showroom-state,
+.showroom-detail__summary,
 .showroom-detail__body,
 .showroom-detail__header,
 .showroom-detail__actions,
@@ -212,6 +213,10 @@
   background: var(--showroom-panel-soft);
 }
 
+.showroom-detail__summary {
+  gap: 14px;
+}
+
 .showroom-detail__image {
   display: block;
   width: 100%;
@@ -298,6 +303,35 @@
 
   .showroom-screen--landing {
     padding: 18px;
+  }
+
+  .showroom-detail__body,
+  .showroom-detail__media {
+    padding: 14px;
+  }
+
+  .showroom-detail__summary {
+    gap: 10px;
+  }
+
+  .showroom-detail__actions {
+    gap: 8px;
+    padding-top: 0;
+  }
+
+  .showroom-play {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .showroom-detail {
+    gap: 14px;
+  }
+
+  .showroom-detail__image {
+    aspect-ratio: 4 / 3;
   }
 
   .showroom-company-field {
