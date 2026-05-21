@@ -21,6 +21,7 @@ const KIOSK_COPY = {
     homeTitle: "首页",
     homeHeroAria: "打开公司详情",
     swipeHeaderAria: "左右滑动或点击切换展厅",
+    swipeHeaderHint: "左右滑动或点击切换展厅",
     previousHallAria: "切换到上一个展厅",
     nextHallAria: "切换到下一个展厅",
     loadingTitle: "正在加载展厅数据",
@@ -58,6 +59,7 @@ const KIOSK_COPY = {
     homeTitle: "Home",
     homeHeroAria: "Open company detail",
     swipeHeaderAria: "Swipe or click to switch halls",
+    swipeHeaderHint: "Swipe or click to switch halls",
     previousHallAria: "Switch to previous hall",
     nextHallAria: "Switch to next hall",
     loadingTitle: "Loading showroom data",
@@ -432,6 +434,20 @@ const createVoicePanelMarkup = (state, lines, hasAudio) => {
   `
 }
 
+const createSwipeProgressMarkup = (copy, currentSlot, totalSlots) => `
+  <div class="kiosk-title-strip__meta">
+    <span class="kiosk-title-strip__hint" data-swipe-hint>${copy.swipeHeaderHint}</span>
+    <span
+      class="kiosk-title-strip__progress"
+      data-swipe-progress
+      data-current-slot="${currentSlot}"
+      data-total-slots="${totalSlots}"
+    >
+      ${currentSlot} / ${totalSlots}
+    </span>
+  </div>
+`
+
 const createLoadingMarkup = (language) => {
   const copy = getUiCopy(language)
 
@@ -468,6 +484,8 @@ const createReadyMarkup = (state) => {
   const product = hall?.products.find((item) => item.id === state.selectedProductId) ?? null
   const activeCategoryTitle = hall ? getHallName(hall, state.language) : copy.homeTitle
   const activeIconSrc = hall ? getHallIconSrc(hall) : null
+  const totalSlots = state.config.showrooms.length + 1
+  const currentSlot = state.activeHallSlot + 1
   const currentVoiceLines = hall
     ? state.screen === "product"
       ? splitParagraphs(getProductSubtitle(product, state.language))
@@ -499,7 +517,10 @@ const createReadyMarkup = (state) => {
           >
             <span class="kiosk-title-strip__chevron kiosk-title-strip__chevron--left" aria-hidden="true"></span>
           </button>
-          <p class="kiosk-title-strip__title" data-active-category-title>${createActiveCategoryTitleMarkup(activeCategoryTitle, activeIconSrc)}</p>
+          <div class="kiosk-title-strip__center">
+            <p class="kiosk-title-strip__title" data-active-category-title>${createActiveCategoryTitleMarkup(activeCategoryTitle, activeIconSrc)}</p>
+            ${createSwipeProgressMarkup(copy, currentSlot, totalSlots)}
+          </div>
           <button
             class="kiosk-title-strip__nav kiosk-title-strip__nav--right"
             type="button"

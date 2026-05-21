@@ -147,11 +147,16 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector('[data-home-hero-image]')?.getAttribute("src")).toBe("https://cdn.example.com/company-home.png")
     expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("home")
     expect(root.querySelector("[data-active-category-title]")?.textContent).toContain("\u9996\u9875")
+    expect(root.querySelector("[data-swipe-hint]")?.textContent).toContain("\u5de6\u53f3\u6ed1\u52a8\u6216\u70b9\u51fb\u5207\u6362\u5c55\u5385")
+    expect(root.querySelector("[data-swipe-progress]")?.getAttribute("data-current-slot")).toBe("1")
+    expect(root.querySelector("[data-swipe-progress]")?.getAttribute("data-total-slots")).toBe("3")
 
     root.querySelector('[data-shift-category="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
     expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("cardiology")
     expect(root.querySelector("[data-active-category-title]")?.textContent).toContain("Cardiology Hall CN")
+    expect(root.querySelector("[data-swipe-progress]")?.getAttribute("data-current-slot")).toBe("2")
+    expect(root.querySelector("[data-swipe-progress]")?.getAttribute("data-total-slots")).toBe("3")
     expect(root.querySelectorAll("[data-product-card]")).toHaveLength(1)
     expect(root.querySelector("[data-product-card]")?.getAttribute("aria-label")).toContain("Guidewire System CN")
   })

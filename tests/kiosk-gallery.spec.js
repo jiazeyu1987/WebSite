@@ -134,6 +134,37 @@ test("gallery arrows switch showrooms and the card region scrolls internally", a
   await expect(page.locator("[data-product-card]")).toHaveCount(0)
 })
 
+test("mobile title strip shows swipe guidance and slot progress", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload({ cardiologyProducts: 1 })
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/")
+
+  const swipeHint = page.locator("[data-swipe-hint]")
+  const swipeProgress = page.locator("[data-swipe-progress]")
+
+  await expect(swipeHint).toBeVisible()
+  await expect(swipeHint).toContainText("左右滑动或点击切换展厅")
+  await expect(swipeProgress).toHaveAttribute("data-current-slot", "1")
+  await expect(swipeProgress).toHaveAttribute("data-total-slots", "3")
+
+  await page.locator('[data-shift-category="1"]').click()
+
+  await expect(page.locator("[data-swipe-header]")).toHaveAttribute("data-active-category-id", "cardiology")
+  await expect(swipeProgress).toHaveAttribute("data-current-slot", "2")
+  await expect(swipeProgress).toHaveAttribute("data-total-slots", "3")
+})
+
 test("clicking the home hero opens company detail loaded from IntRuoyi and returns back home", async ({ page }) => {
   await page.route("**/showroom/display/app-config", async (route) => {
     await route.fulfill({
