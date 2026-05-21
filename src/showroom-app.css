@@ -352,13 +352,33 @@
     aspect-ratio: 4 / 3;
   }
 
+  .showroom-company-fields {
+    gap: 12px;
+    border-top: 0;
+  }
+
   .showroom-company-field {
     grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid rgba(41, 84, 162, 0.12);
+    border-radius: 20px;
+    background: rgba(250, 252, 255, 0.96);
+    box-shadow: 0 12px 28px rgba(32, 71, 144, 0.08);
   }
 
   .showroom-company-field dt {
-    border-right: none;
-    border-bottom: 1px solid rgba(41, 84, 162, 0.08);
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .showroom-company-field dd {
+    padding: 0;
+    line-height: 1.72;
   }
 
   .showroom-language-toggle {

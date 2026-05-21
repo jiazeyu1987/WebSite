@@ -192,6 +192,21 @@ describe("createShowroomConsumerApp", () => {
     expect(actionBar?.compareDocumentPosition(fields) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it("renders stable field label/value markers for the company public fields", async () => {
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createApiPayload()),
+      createAudio: vi.fn(() => createAudioController())
+    })
+    await flush()
+
+    root.querySelector("[data-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    const firstField = root.querySelector('[data-company-field-index="0"]')
+
+    expect(firstField?.querySelector("[data-company-field-label]")?.textContent).toContain("发展历程")
+    expect(firstField?.querySelector("[data-company-field-value]")?.textContent).toContain("盈泰医疗发展历程")
+  })
+
   it("shows an explicit error state when company.publicFields is missing", async () => {
     const root = document.getElementById("app")
     const payload = createApiPayload()

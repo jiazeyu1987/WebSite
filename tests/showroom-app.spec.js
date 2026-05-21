@@ -188,6 +188,53 @@ test("mobile showroom detail keeps the action bar visible while scrolling fields
   await expect(actionBar).toContainText("播放讲解")
 })
 
+test("mobile showroom detail presents public fields as separated cards", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload()
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/showroom")
+
+  await page.locator("[data-company-entry-card]").click()
+
+  const firstField = page.locator('[data-company-field-index="0"]')
+  const secondField = page.locator('[data-company-field-index="1"]')
+
+  await expect(firstField.locator("[data-company-field-label]")).toContainText("发展历程")
+  await expect(firstField.locator("[data-company-field-value]")).toContainText("盈泰医疗发展历程")
+
+  const fieldLayout = await page.evaluate(() => {
+    const first = document.querySelector('[data-company-field-index="0"]')
+    const second = document.querySelector('[data-company-field-index="1"]')
+    const firstLabel = first?.querySelector("[data-company-field-label]")
+    const firstValue = first?.querySelector("[data-company-field-value]")
+    const styles = first ? getComputedStyle(first) : null
+
+    return {
+      firstBottom: first?.getBoundingClientRect().bottom ?? 0,
+      secondTop: second?.getBoundingClientRect().top ?? 0,
+      labelBottom: firstLabel?.getBoundingClientRect().bottom ?? 0,
+      valueTop: firstValue?.getBoundingClientRect().top ?? 0,
+      borderRadius: styles?.borderRadius ?? "",
+      backgroundColor: styles?.backgroundColor ?? ""
+    }
+  })
+
+  expect(fieldLayout.secondTop).toBeGreaterThan(fieldLayout.firstBottom)
+  expect(fieldLayout.valueTop).toBeGreaterThan(fieldLayout.labelBottom)
+  expect(fieldLayout.borderRadius).not.toBe("0px")
+  expect(fieldLayout.backgroundColor).not.toBe("rgba(0, 0, 0, 0)")
+})
+
 test("fails fast on /showroom when company.publicFields is missing from the backend contract", async ({ page }) => {
   await page.route("**/showroom/display/app-config", async (route) => {
     const payload = createApiPayload()

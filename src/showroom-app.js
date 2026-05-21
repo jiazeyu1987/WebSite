@@ -165,8 +165,8 @@ const createLandingMarkup = (company, language) => {
 
 const createCompanyFieldMarkup = (field, index) => `
   <div class="showroom-company-field" data-company-field data-company-field-index="${index}">
-    <dt>${field.label}</dt>
-    <dd>${field.value}</dd>
+    <dt data-company-field-label>${field.label}</dt>
+    <dd data-company-field-value>${field.value}</dd>
   </div>
 `
 
