@@ -1,230 +1,251 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from "vitest"
-import { createMedicalKioskApp, kioskCategories } from "./medical-kiosk.js"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { createMedicalKioskApp } from "./medical-kiosk.js"
 
-class MockSpeechSynthesisUtterance {
-  constructor(text) {
-    this.text = text
-    this.lang = ""
-    this.rate = 1
-    this.pitch = 1
-    this.onend = null
-    this.onerror = null
-  }
-}
-
-const openFirstProductDetail = (root) => {
-  root.querySelector('[data-shift-category="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-  root.querySelector("[data-product-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-}
-
-const createSpeechRuntime = () => {
-  let spokenUtterance = null
-
-  const speechSynthesis = {
-    cancelCalled: 0,
-    speakCalled: 0,
-    cancel() {
-      this.cancelCalled += 1
+const createMappedAppConfig = () => ({
+  company: {
+    id: "1",
+    name: "Yingtai Medical CN",
+    nameEn: "Yingtai Medical",
+    homeImage: "https://cdn.example.com/company-home.png",
+    subtitleZh: "Company narration in Chinese",
+    subtitleEn: "English company narration",
+    audioZh: "https://cdn.example.com/company-zh.mp3",
+    audioEn: "https://cdn.example.com/company-en.mp3",
+    publicFields: [
+      { label: "Milestones", value: "Yingtai growth timeline" },
+      { label: "Awards", value: "National high-tech enterprise" }
+    ]
+  },
+  showrooms: [
+    {
+      id: "10",
+      code: "CARDIOLOGY",
+      name: "Cardiology Hall CN",
+      nameEn: "Cardiology Hall",
+      description: "Chinese hall description",
+      descriptionEn: "English hall description",
+      previewImageUrl: "https://cdn.example.com/hall-cardiology.png",
+      products: [
+        {
+          id: "101",
+          code: "P-101",
+          nameCn: "Guidewire System CN",
+          nameEn: "Guidewire System",
+          previewImageUrl: "https://cdn.example.com/product-101.png",
+          subtitleZh: "Chinese product narration",
+          subtitleEn: "English product narration",
+          audioZh: "https://cdn.example.com/product-101-zh.mp3",
+          audioEn: "https://cdn.example.com/product-101-en.mp3"
+        }
+      ]
     },
-    speak(utterance) {
-      this.speakCalled += 1
-      spokenUtterance = utterance
+    {
+      id: "20",
+      code: "NEUROLOGY",
+      name: "Neurology Hall CN",
+      nameEn: "Neurology Hall",
+      description: "Neurology hall description",
+      descriptionEn: "Neurology hall description in English",
+      previewImageUrl: "https://cdn.example.com/hall-neuro.png",
+      products: [
+        {
+          id: "201",
+          code: "P-201",
+          nameCn: "Catheter System CN",
+          nameEn: "Catheter System",
+          previewImageUrl: "https://cdn.example.com/product-201.png",
+          subtitleZh: "Chinese product narration two",
+          subtitleEn: "English product narration two",
+          audioZh: "https://cdn.example.com/product-201-zh.mp3",
+          audioEn: "https://cdn.example.com/product-201-en.mp3"
+        }
+      ]
     }
-  }
+  ]
+})
+
+const createMappedProductDetail = (productId) => ({
+  id: String(productId),
+  nameCn: productId === "101" ? "Guidewire System CN" : "Catheter System CN",
+  nameEn: productId === "101" ? "Guidewire System" : "Catheter System",
+  previewImageUrl: `https://cdn.example.com/product-${productId}.png`,
+  publicFields: [
+    { label: "Target market", value: productId === "101" ? "Cardiology" : "Neurology" },
+    { label: "Registration", value: productId === "101" ? "Cert-A" : "Cert-B" }
+  ]
+})
+
+const createAudioController = (src = "") => {
+  const listeners = new Map()
 
   return {
-    speechSynthesis,
-    SpeechSynthesisUtterance: MockSpeechSynthesisUtterance,
-    getSpokenUtterance: () => spokenUtterance
+    src,
+    currentTime: 0,
+    muted: false,
+    play: vi.fn(async () => {
+      listeners.get("play")?.forEach((listener) => listener())
+    }),
+    pause: vi.fn(() => {
+      listeners.get("pause")?.forEach((listener) => listener())
+    }),
+    addEventListener: vi.fn((eventName, listener) => {
+      const nextListeners = listeners.get(eventName) ?? []
+      nextListeners.push(listener)
+      listeners.set(eventName, nextListeners)
+    }),
+    removeEventListener: vi.fn((eventName, listener) => {
+      const nextListeners = (listeners.get(eventName) ?? []).filter((item) => item !== listener)
+      listeners.set(eventName, nextListeners)
+    })
   }
+}
+
+const createAudioFactoryStub = () => {
+  const controllers = []
+  const factory = vi.fn((src) => {
+    const controller = createAudioController(src)
+    controllers.push(controller)
+    return controller
+  })
+
+  return { factory, controllers }
+}
+
+const flush = async () => {
+  await Promise.resolve()
+  await Promise.resolve()
+  await Promise.resolve()
 }
 
 const mountApp = (options = {}) => {
   document.body.innerHTML = '<div id="app"></div>'
   const root = document.getElementById("app")
-
   createMedicalKioskApp(root, options)
-
   return root
 }
 
 describe("createMedicalKioskApp", () => {
-  it("renders a single active hall title and switches categories by swipe", () => {
-    const root = mountApp()
-
-    expect(root.querySelector('[data-reference-layout="medical-kiosk"]')).not.toBeNull()
-    expect(root.querySelectorAll("[data-tab-id]")).toHaveLength(0)
-    expect(root.querySelectorAll("[data-active-category-title]")).toHaveLength(1)
-    expect(root.querySelector("[data-active-category-title]")?.textContent).toContain(kioskCategories[0].title)
-    const swipeHeader = root.querySelector("[data-swipe-header]")
-
-    swipeHeader?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 220, clientY: 24 }))
-    swipeHeader?.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 40, clientY: 24 }))
-
-    expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("cardiology")
-    expect(root.querySelector("[data-active-category-title]")?.textContent).toContain(kioskCategories[1].title)
-    expect(root.querySelectorAll("[data-product-card]")).toHaveLength(kioskCategories[1].products.length)
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="app"></div>'
+    localStorage.clear()
   })
 
-  it("switches categories by arrow controls and renders a dedicated gallery scroll region", () => {
-    const root = mountApp()
+  it("renders backend halls and switches halls by arrows", async () => {
+    const loadAppConfig = vi.fn().mockResolvedValue(createMappedAppConfig())
+    const root = mountApp({
+      loadAppConfig
+    })
+    await flush()
 
-    expect(root.querySelector("[data-gallery-scroll-region]")).not.toBeNull()
+    expect(loadAppConfig).toHaveBeenCalledTimes(1)
+    expect(root.querySelector('[data-reference-layout="medical-kiosk"]')).not.toBeNull()
+    expect(root.querySelector("[data-mode-option]")).toBeNull()
+    expect(root.querySelector(".kiosk-header [data-language-toggle-button]")).toBeNull()
+    expect(root.querySelector(".kiosk-voice__header [data-language-toggle-button]")).not.toBeNull()
+    expect(root.querySelector('[data-home-hero-image]')?.getAttribute("src")).toBe("https://cdn.example.com/company-home.png")
+    expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("home")
+    expect(root.querySelector("[data-active-category-title]")?.textContent).toContain("\u9996\u9875")
+
     root.querySelector('[data-shift-category="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
     expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("cardiology")
-    expect(root.querySelector("[data-active-category-title]")?.textContent).toContain(kioskCategories[1].title)
-    expect(root.querySelectorAll("[data-product-card]")).toHaveLength(kioskCategories[1].products.length)
-
-    root.querySelector('[data-shift-category="-1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-
-    expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("home")
-    expect(root.querySelector("[data-active-category-title]")?.textContent).toContain(kioskCategories[0].title)
+    expect(root.querySelector("[data-active-category-title]")?.textContent).toContain("Cardiology Hall CN")
+    expect(root.querySelectorAll("[data-product-card]")).toHaveLength(1)
+    expect(root.querySelector("[data-product-card]")?.getAttribute("aria-label")).toContain("Guidewire System CN")
   })
 
-  it("opens a product detail page and returns to the gallery", () => {
-    const root = mountApp()
+  it("opens company detail from backend config and plays the backend company audio in English", async () => {
+    const audioFactory = createAudioFactoryStub()
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig()),
+      createAudio: audioFactory.factory
+    })
+    await flush()
 
-    openFirstProductDetail(root)
+    root.querySelector("[data-language-toggle-button]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-home-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
 
-    expect(root.querySelector("[data-product-detail-id]")).not.toBeNull()
-    expect(root.querySelector("[data-product-detail-title]")?.textContent).toContain("导入鞘套组")
-    expect(root.querySelector("[data-product-specs-panel]")).toBeNull()
-    expect(root.querySelectorAll("[data-product-spec-item]")).toHaveLength(0)
-    expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("cardiology")
+    expect(root.querySelector("[data-company-detail-panel]")).not.toBeNull()
+    expect(root.querySelector("[data-company-detail-title]")?.textContent).toContain("Yingtai Medical")
+    expect(root.querySelector("[data-company-detail-copy]")?.textContent).toContain("English company narration")
 
-    root.querySelector("[data-back-to-gallery]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-
-    expect(root.querySelector("[data-product-detail-id]")).toBeNull()
-    expect(root.querySelectorAll("[data-product-card]")).toHaveLength(kioskCategories[1].products.length)
-  })
-
-  it("renders one audio toggle in the right voice header and removes the old detail mute controls", () => {
-    const root = mountApp()
-
-    openFirstProductDetail(root)
-
-    const voiceHeader = root.querySelector(".kiosk-voice__header")
-    const audioToggle = root.querySelector("[data-speech-mute-toggle]")
-
-    expect(root.querySelector("[data-back-to-gallery]")?.textContent).toContain("返回展厅")
-    expect(root.querySelector("[data-product-hero-art]")).not.toBeNull()
-    expect(root.querySelector("[data-product-description-panel]")).not.toBeNull()
-    expect(root.querySelector("[data-product-description-title]")?.textContent).toContain("产品描述")
-    expect(root.querySelectorAll("[data-product-description-line]")).toHaveLength(3)
-    expect(root.querySelectorAll("[data-product-tag]")).toHaveLength(3)
-    expect(audioToggle).not.toBeNull()
-    expect(voiceHeader?.contains(audioToggle)).toBe(true)
-    expect(audioToggle?.getAttribute("data-audio-state")).toBe("unmuted")
-    expect(audioToggle?.getAttribute("aria-label")).toBe("静音")
-    expect(root.querySelector("[data-speech-mute]")).toBeNull()
-    expect(root.querySelector("[data-speech-unmute]")).toBeNull()
-    expect(root.querySelector("[data-muted-state]")).toBeNull()
-  })
-
-  it("plays and stops narration through the detail-page speech action", () => {
-    const speechRuntime = createSpeechRuntime()
-    const root = mountApp(speechRuntime)
-
-    openFirstProductDetail(root)
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
 
-    expect(speechRuntime.speechSynthesis.speakCalled).toBe(1)
-    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("正在播放语音讲解")
-    expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("停止讲解")
-    expect(speechRuntime.getSpokenUtterance()?.text).toContain("导入鞘套组")
-
-    speechRuntime.getSpokenUtterance()?.onend?.()
-
-    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("点击播放语音讲解")
-    expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("播放讲解")
-  })
-
-  it("toggles from green speaker mute action to red muted speaker action", () => {
-    const root = mountApp()
-
-    openFirstProductDetail(root)
-    const audioToggle = root.querySelector("[data-speech-mute-toggle]")
-
-    expect(audioToggle?.getAttribute("data-audio-state")).toBe("unmuted")
-    expect(audioToggle?.getAttribute("aria-label")).toBe("静音")
-
-    audioToggle?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-
-    const mutedToggle = root.querySelector("[data-speech-mute-toggle]")
-    expect(mutedToggle?.getAttribute("data-audio-state")).toBe("muted")
-    expect(mutedToggle?.getAttribute("aria-label")).toBe("开声")
-    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("已静音")
-  })
-
-  it("enters narration mode without speaking when playback starts while muted", () => {
-    const speechRuntime = createSpeechRuntime()
-    const root = mountApp(speechRuntime)
-
-    openFirstProductDetail(root)
-    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-
-    expect(speechRuntime.speechSynthesis.speakCalled).toBe(0)
-    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("muted")
-    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("已静音，仅显示文字")
-    expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("停止讲解")
-  })
-
-  it("mutes active narration immediately and keeps text-only narration active", () => {
-    const speechRuntime = createSpeechRuntime()
-    const root = mountApp(speechRuntime)
-
-    openFirstProductDetail(root)
-    root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    const cancelCallsAfterPlay = speechRuntime.speechSynthesis.cancelCalled
-
-    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-
-    expect(speechRuntime.speechSynthesis.speakCalled).toBe(1)
-    expect(speechRuntime.speechSynthesis.cancelCalled).toBe(cancelCallsAfterPlay + 1)
-    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("muted")
-    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("已静音，仅显示文字")
-    expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("停止讲解")
-  })
-
-  it("replays the active transcript immediately when unmuting during muted narration", () => {
-    const speechRuntime = createSpeechRuntime()
-    const root = mountApp(speechRuntime)
-
-    openFirstProductDetail(root)
-    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-
-    expect(speechRuntime.speechSynthesis.speakCalled).toBe(1)
+    expect(audioFactory.controllers).toHaveLength(1)
+    expect(audioFactory.controllers[0].src).toBe("https://cdn.example.com/company-en.mp3")
+    expect(audioFactory.controllers[0].play).toHaveBeenCalledTimes(1)
+    expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("Pause narration")
+    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("aria-label")).toBe("Mute audio")
     expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("unmuted")
-    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("正在播放语音讲解")
-    expect(speechRuntime.getSpokenUtterance()?.text).toContain("导入鞘套组")
+
+    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("aria-label")).toBe("Unmute audio")
+    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("muted")
   })
 
-  it("preserves mute across product navigation while resetting narration mode", () => {
-    const speechRuntime = createSpeechRuntime()
-    const root = mountApp(speechRuntime)
+  it("loads product detail from the backend, renders mapped fields, and plays English product audio", async () => {
+    const audioFactory = createAudioFactoryStub()
+    const loadProductDetail = vi.fn((productId) => Promise.resolve(createMappedProductDetail(productId)))
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig()),
+      loadProductDetail,
+      createAudio: audioFactory.factory
+    })
+    await flush()
 
-    openFirstProductDetail(root)
-    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-language-toggle-button]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector('[data-shift-category="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-product-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
+    await flush()
+
+    expect(loadProductDetail).toHaveBeenCalledWith("101")
+    expect(root.querySelector("[data-product-detail-id]")).not.toBeNull()
+    expect(root.querySelector("[data-product-detail-title]")?.textContent).toContain("Guidewire System")
+    expect(root.querySelectorAll("[data-product-description-line]")).toHaveLength(2)
+    expect(root.textContent).toContain("Target market")
+    expect(root.textContent).toContain("Cert-A")
+
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    root.querySelector("[data-back-to-gallery]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
 
-    expect(root.querySelector("[data-product-detail-id]")).toBeNull()
+    expect(audioFactory.controllers).toHaveLength(1)
+    expect(audioFactory.controllers[0].src).toBe("https://cdn.example.com/product-101-en.mp3")
+    expect(audioFactory.controllers[0].play).toHaveBeenCalledTimes(1)
+  })
 
-    root.querySelectorAll("[data-product-card]")[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+  it("shows an explicit error when the initial app-config load fails", async () => {
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockRejectedValue(new Error("SHOWROOM_APP_CONFIG_UNAVAILABLE: request failed with 503."))
+    })
+    await flush()
 
-    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("muted")
-    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("已静音，点击播放语音讲解")
-    expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("播放讲解")
+    expect(root.querySelector('[data-load-state="error"]')).not.toBeNull()
+    expect(root.querySelector('[data-screen="kiosk-error"]')).not.toBeNull()
+    expect(root.textContent).toContain("SHOWROOM_APP_CONFIG_UNAVAILABLE: request failed with 503.")
+  })
 
-    root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+  it("persists the selected English language across remounts", async () => {
+    const loadAppConfig = vi.fn().mockResolvedValue(createMappedAppConfig())
+    const root = mountApp({ loadAppConfig })
+    await flush()
 
-    expect(speechRuntime.speechSynthesis.speakCalled).toBe(0)
-    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("已静音，仅显示文字")
+    root.querySelector("[data-language-toggle-button]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    expect(root.querySelector("[data-language-toggle-button]")?.getAttribute("data-language-current")).toBe("en")
+    expect(root.querySelector("[data-active-category-title]")?.textContent).toContain("Home")
+    expect(root.querySelector("[data-voice-copy]")?.textContent).toContain("English company narration")
+
+    const remountedRoot = mountApp({ loadAppConfig })
+    await flush()
+
+    expect(remountedRoot.querySelector("[data-language-toggle-button]")?.getAttribute("data-language-current")).toBe("en")
+    expect(remountedRoot.querySelector("[data-active-category-title]")?.textContent).toContain("Home")
+    expect(remountedRoot.querySelector("[data-voice-copy]")?.textContent).toContain("English company narration")
   })
 })

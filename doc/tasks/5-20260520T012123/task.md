@@ -76,6 +76,7 @@ Implement a frontend admin console page that can import and export a configurati
 - Completed work:
   - Added Vitest coverage and Playwright browser verification.
   - Recorded frontend evidence, execution log, test report, completion gate, and closeout preview.
+  - During a later E2E rerun, fixed the runtime entrypoint so the browser uses the config-driven app, and isolated Vitest from Playwright spec discovery.
 - Verification evidence:
   - `npm test -- --run`
   - `npm run build`
@@ -92,6 +93,7 @@ Implement a frontend admin console page that can import and export a configurati
   - `npm test -- --run`
   - `npm run build`
   - `npx playwright test`
+  - `npx playwright test --reporter=line`
 
 ## Closeout Preview
 

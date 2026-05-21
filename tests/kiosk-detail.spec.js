@@ -1,51 +1,129 @@
 import { expect, test } from "@playwright/test"
 
-test("opens a kiosk product detail page, uses one voice-header toggle button, and returns to the gallery", async ({ page }) => {
+const createAppConfigPayload = () => ({
+  company: {
+    companyId: 1,
+    name: "Yingtai Medical CN",
+    nameEn: "Yingtai Medical",
+    homeImageUrl: "https://cdn.example.com/company-home.png",
+    subtitleZh: "Company narration in Chinese",
+    subtitleEn: "English company narration",
+    audioZhUrl: "https://cdn.example.com/company-zh.mp3",
+    audioEnUrl: "https://cdn.example.com/company-en.mp3",
+    publicFields: [
+      { label: "Milestones", value: "Yingtai growth timeline" }
+    ]
+  },
+  showrooms: [
+    {
+      hallId: 10,
+      hallCode: "CARDIOLOGY",
+      name: "Cardiology Hall CN",
+      nameEn: "Cardiology Hall",
+      description: "Chinese hall description",
+      descriptionEn: "English hall description",
+      previewImageUrl: "https://cdn.example.com/hall-cardiology.png",
+      products: [
+        {
+          productId: 101,
+          productCode: "P-101",
+          nameCn: "Guidewire System CN",
+          nameEn: "Guidewire System",
+          previewImageUrl: "https://cdn.example.com/product-101.png",
+          subtitleZh: "Chinese product narration",
+          subtitleEn: "English product narration",
+          audioZhUrl: "https://cdn.example.com/product-101-zh.mp3",
+          audioEnUrl: "https://cdn.example.com/product-101-en.mp3"
+        }
+      ]
+    }
+  ]
+})
+
+const createProductDetailPayload = () => ({
+  productCard: {
+    id: 101,
+    nameCn: "Guidewire System CN",
+    nameEn: "Guidewire System",
+    previewImageUrl: "https://cdn.example.com/product-101.png"
+  },
+  publicProductFields: [
+    { label: "Target market", value: "Cardiology" },
+    { label: "Registration", value: "Cert-A" }
+  ]
+})
+
+test("opens a kiosk product detail page in English, keeps one voice-header toggle button, and persists the language choice", async ({ page }) => {
   await page.addInitScript(() => {
-    const metrics = {
-      cancelCalled: 0,
-      speakCalled: 0,
-      lastText: ""
+    const audioMetrics = {
+      createdSrcs: [],
+      playCalls: 0,
+      pauseCalls: 0,
+      mutedStates: []
     }
 
-    class MockSpeechSynthesisUtterance {
-      constructor(text) {
-        this.text = text
-        this.lang = ""
-        this.rate = 1
-        this.pitch = 1
-        this.onend = null
-        this.onerror = null
+    class MockAudio {
+      constructor(src = "") {
+        this.src = src
+        this.currentTime = 0
+        this.muted = false
+        audioMetrics.createdSrcs.push(src)
+      }
+
+      play() {
+        audioMetrics.playCalls += 1
+        audioMetrics.mutedStates.push(this.muted)
+        return Promise.resolve()
+      }
+
+      pause() {
+        audioMetrics.pauseCalls += 1
       }
     }
 
-    const speechSynthesis = {
-      cancel() {
-        metrics.cancelCalled += 1
-      },
-      speak(utterance) {
-        metrics.speakCalled += 1
-        metrics.lastText = utterance.text
-      }
-    }
+    window.__audioMetrics = audioMetrics
+    window.Audio = MockAudio
+  })
 
-    window.__speechMetrics = metrics
-    window.__MEDICAL_KIOSK_SPEECH_RUNTIME__ = {
-      speechSynthesis,
-      SpeechSynthesisUtterance: MockSpeechSynthesisUtterance
-    }
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createAppConfigPayload()
+      })
+    })
+  })
+
+  await page.route("**/showroom/display/product/101", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createProductDetailPayload()
+      })
+    })
   })
 
   await page.setViewportSize({ width: 1920, height: 911 })
   await page.goto("/")
 
   await expect(page.locator('[data-reference-layout="medical-kiosk"]')).toBeVisible()
-  await expect(page.locator("[data-company-logo-card]")).toHaveCount(1)
+  await expect(page.locator("[data-home-hero-image]")).toHaveCount(1)
+
+  await expect(page.locator(".kiosk-header [data-language-toggle-button]")).toHaveCount(0)
+  await page.locator("[data-language-toggle-button]").click()
+  await expect(page.locator("[data-language-toggle-button]")).toHaveAttribute("data-language-current", "en")
+  await expect(page.locator("[data-active-category-title]")).toContainText("Home")
 
   await page.locator('[data-shift-category="1"]').click()
-  await expect(page.locator("[data-active-category-title]")).toContainText("心内介入展厅")
-
-  const galleryVoiceParagraphs = await page.locator("[data-voice-copy] p").allInnerTexts()
+  await expect(page.locator("[data-active-category-title]")).toContainText("Cardiology Hall")
+  await expect(page.locator("[data-voice-copy]")).toContainText("English hall description")
+  await expect(page.locator("[data-product-card]").first()).toHaveAttribute("aria-label", "Guidewire System")
 
   await page.locator("[data-product-card]").first().click()
 
@@ -53,53 +131,30 @@ test("opens a kiosk product detail page, uses one voice-header toggle button, an
   const audioToggle = page.locator("[data-speech-mute-toggle]")
 
   await expect(page.locator("[data-product-detail-id]")).toBeVisible()
-  await expect(page.locator("[data-back-to-gallery]")).toContainText("返回展厅")
-  await expect(page.locator("[data-product-description-title]")).toContainText("产品描述")
-  await expect(page.locator("[data-speaking-state]")).toContainText("语音讲解")
-  await expect(page.locator("[data-product-tag]")).toHaveCount(3)
+  await expect(page.locator("[data-back-to-gallery]")).toContainText("Back to hall")
+  await expect(page.locator("[data-product-description-title]")).toContainText("Product Details")
+  await expect(page.locator("[data-speaking-state]")).toContainText("Press to play narration")
+  await expect(page.locator("[data-product-tag]")).toHaveCount(2)
   await expect(page.locator(".kiosk-voice")).toBeVisible()
-  await expect(page.locator("[data-voice-copy] p")).toHaveText(galleryVoiceParagraphs)
   await expect(audioToggle).toBeVisible()
   await expect(audioToggle).toHaveAttribute("data-audio-state", "unmuted")
-  await expect(audioToggle).toHaveAttribute("aria-label", "静音")
+  await expect(audioToggle).toHaveAttribute("aria-label", "Mute audio")
   await expect(voiceHeader.locator("[data-speech-mute-toggle]")).toHaveCount(1)
-  await expect(page.locator("[data-speech-mute]")).toHaveCount(0)
-  await expect(page.locator("[data-speech-unmute]")).toHaveCount(0)
-  await expect(page.locator("[data-muted-state]")).toHaveCount(0)
+  await expect(voiceHeader.locator("[data-language-toggle-button]")).toHaveCount(1)
 
-  expect(await audioToggle.evaluate((element) => getComputedStyle(element).color)).toBe("rgb(40, 179, 106)")
+  await page.locator("[data-speech-toggle]").click()
+  await expect(page.locator("[data-speaking-state]")).toContainText("Playing narration")
+  await expect(page.locator("[data-speech-toggle]")).toContainText("Pause narration")
+
+  const playedMetrics = await page.evaluate(() => window.__audioMetrics)
+  expect(playedMetrics.playCalls).toBe(1)
+  expect(playedMetrics.createdSrcs).toContain("https://cdn.example.com/product-101-en.mp3")
 
   await audioToggle.click()
   await expect(audioToggle).toHaveAttribute("data-audio-state", "muted")
-  await expect(audioToggle).toHaveAttribute("aria-label", "开声")
-  await expect(page.locator("[data-speaking-state]")).toContainText("已静音，点击播放语音讲解")
-  expect(await audioToggle.evaluate((element) => getComputedStyle(element).color)).toBe("rgb(215, 77, 83)")
+  await expect(audioToggle).toHaveAttribute("aria-label", "Unmute audio")
 
-  await page.locator("[data-speech-toggle]").click()
-  await expect(page.locator("[data-speaking-state]")).toContainText("已静音，仅显示文字")
-  await expect(page.locator("[data-speech-toggle]")).toContainText("停止讲解")
-  await expect(page.locator("[data-voice-copy] p")).toHaveText(galleryVoiceParagraphs)
-
-  const mutedMetrics = await page.evaluate(() => window.__speechMetrics)
-  expect(mutedMetrics.speakCalled).toBe(0)
-
-  await audioToggle.click()
-  await expect(audioToggle).toHaveAttribute("data-audio-state", "unmuted")
-  await expect(audioToggle).toHaveAttribute("aria-label", "静音")
-  await expect(page.locator("[data-speaking-state]")).toContainText("正在播放语音讲解")
-  expect(await audioToggle.evaluate((element) => getComputedStyle(element).color)).toBe("rgb(40, 179, 106)")
-
-  const unmutedMetrics = await page.evaluate(() => window.__speechMetrics)
-  expect(unmutedMetrics.speakCalled).toBe(1)
-  expect(unmutedMetrics.lastText).toContain(await page.locator("[data-product-detail-title]").innerText())
-
-  await page.screenshot({
-    path: "output/playwright/kiosk-detail-reference-alignment.png",
-    fullPage: true
-  })
-
-  await page.locator("[data-back-to-gallery]").click()
-  await expect(page.locator("[data-product-detail-id]")).toHaveCount(0)
-  await expect(page.locator("[data-voice-copy] p")).toHaveText(galleryVoiceParagraphs)
-  await expect(page.locator("[data-product-card]")).toHaveCount(36)
+  await page.reload()
+  await expect(page.locator("[data-language-toggle-button]")).toHaveAttribute("data-language-current", "en")
+  await expect(page.locator("[data-active-category-title]")).toContainText("Home")
 })

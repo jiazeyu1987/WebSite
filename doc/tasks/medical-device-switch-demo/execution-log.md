@@ -65,3 +65,25 @@ GREEN: npm run build -> PASS
 GREEN: Playwright landscape verification at 1692x951 -> PASS, the root page rendered data-reference-layout="medical-kiosk", a 6-card first row, and the explanation panel on the right
 
 GREEN: Playwright portrait verification at 866x1536 -> PASS, the root page rendered data-reference-layout="medical-kiosk", a 4-card first row, and the explanation panel below the gallery
+
+BDD: Swipe title switcher -> Given the top red-box area should no longer show a full menu / When the kiosk page renders / Then only one active hall title should be visible at a time, and swiping left or right across the title area should switch halls while the product wall and explanation panel update together
+
+RED: npx vitest run src/medical-kiosk.test.js -> FAIL, the kiosk still rendered multiple menu items instead of a single swipe-driven title
+
+GREEN: npx vitest run src/medical-kiosk.test.js src/app.test.js tests/run-website-bat.test.js -> PASS
+
+GREEN: npm run build -> PASS
+
+GREEN: Playwright landscape swipe verification -> PASS, top menu items were removed, only one title remained, and a left swipe switched from 首页 to 心内介入展厅
+
+GREEN: Playwright portrait swipe verification -> PASS, top menu items were removed, only one title remained, and a left swipe switched from 首页 to 心内介入展厅 while keeping the explanation panel below the gallery
+
+BDD: Root entry regression guard -> Given the homepage root entry can be changed independently from the kiosk module / When src/main.js is validated / Then it must boot createMedicalKioskApp and must not boot createShowroomApp
+
+RED: npx vitest run src/main-entry.test.js -> FAIL, src/main.js had reverted to the showroom console entry again
+
+GREEN: npx vitest run src/main-entry.test.js src/medical-kiosk.test.js src/app.test.js tests/run-website-bat.test.js -> PASS
+
+GREEN: npm run build -> PASS
+
+GREEN: Live root-entry verification via http://127.0.0.1:4173/src/main.js -> PASS, the served entry imports medical-kiosk.css and createMedicalKioskApp

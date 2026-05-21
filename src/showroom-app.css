@@ -1,0 +1,315 @@
+:root {
+  --showroom-bg: #edf2fb;
+  --showroom-panel: rgba(255, 255, 255, 0.95);
+  --showroom-panel-soft: rgba(246, 249, 255, 0.96);
+  --showroom-border: rgba(41, 84, 162, 0.14);
+  --showroom-primary: #1c5fd4;
+  --showroom-primary-deep: #173f86;
+  --showroom-text: #1e2d43;
+  --showroom-muted: #66758c;
+  --showroom-shadow: 0 22px 54px rgba(32, 71, 144, 0.12);
+}
+
+.showroom-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px;
+  color: var(--showroom-text);
+  background:
+    radial-gradient(circle at top left, rgba(140, 190, 255, 0.22), transparent 30%),
+    linear-gradient(180deg, #f9fbff 0%, var(--showroom-bg) 100%);
+}
+
+.showroom-ready,
+.showroom-state,
+.showroom-header,
+.showroom-screen,
+.showroom-company-card,
+.showroom-detail__body,
+.showroom-detail__media,
+.showroom-empty-state {
+  backdrop-filter: blur(16px);
+}
+
+.showroom-ready {
+  display: grid;
+  gap: 20px;
+}
+
+.showroom-header,
+.showroom-screen,
+.showroom-state {
+  padding: 24px;
+  border: 1px solid var(--showroom-border);
+  border-radius: 28px;
+  background: var(--showroom-panel);
+  box-shadow: var(--showroom-shadow);
+}
+
+.showroom-header__copy,
+.showroom-state,
+.showroom-detail__body,
+.showroom-detail__header,
+.showroom-detail__actions,
+.showroom-empty-state {
+  display: grid;
+  gap: 12px;
+}
+
+.showroom-header__topbar {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.showroom-header__text {
+  display: grid;
+  gap: 12px;
+}
+
+.showroom-header__copy h1,
+.showroom-state h2,
+.showroom-detail__header h2,
+.showroom-empty-state h3 {
+  margin: 0;
+}
+
+.showroom-eyebrow {
+  margin: 0;
+  color: var(--showroom-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.showroom-copy,
+.showroom-state__message,
+.showroom-play-state,
+.showroom-empty-state p {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--showroom-text);
+}
+
+.showroom-action,
+.showroom-back,
+.showroom-play {
+  cursor: pointer;
+  font: inherit;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.showroom-action,
+.showroom-back,
+.showroom-play {
+  width: fit-content;
+  padding: 12px 18px;
+  border: 1px solid var(--showroom-border);
+  border-radius: 999px;
+  background: rgba(244, 249, 255, 0.92);
+}
+
+.showroom-action:hover,
+.showroom-back:hover,
+.showroom-play:hover,
+.showroom-company-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(28, 95, 212, 0.28);
+}
+
+.showroom-language-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--showroom-border);
+  border-radius: 999px;
+  background: rgba(244, 249, 255, 0.92);
+}
+
+.showroom-language-toggle__button {
+  min-width: 72px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--showroom-muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.showroom-language-toggle__button[aria-pressed="true"] {
+  background: linear-gradient(135deg, #1c5fd4 0%, #2d79f0 100%);
+  color: #ffffff;
+}
+
+.showroom-language-toggle__button:hover {
+  transform: translateY(-1px);
+}
+
+.showroom-screen--landing {
+  padding: 28px;
+}
+
+.showroom-landing {
+  display: grid;
+  justify-content: start;
+}
+
+.showroom-company-card {
+  display: grid;
+  gap: 0;
+  width: min(420px, 100%);
+  padding: 0;
+  border: 1px solid var(--showroom-border);
+  border-radius: 28px;
+  overflow: hidden;
+  background: var(--showroom-panel-soft);
+  text-align: left;
+  box-shadow: 0 22px 44px rgba(28, 74, 147, 0.12);
+}
+
+.showroom-company-card__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.showroom-company-card__caption {
+  display: grid;
+  gap: 6px;
+  padding: 18px 20px 22px;
+  color: var(--showroom-text);
+}
+
+.showroom-company-card__caption strong {
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.showroom-company-card__caption span {
+  color: var(--showroom-muted);
+  font-size: 14px;
+}
+
+.showroom-detail {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.78fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.showroom-detail__media,
+.showroom-detail__body {
+  padding: 18px;
+  border: 1px solid var(--showroom-border);
+  border-radius: 24px;
+  background: var(--showroom-panel-soft);
+}
+
+.showroom-detail__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+.showroom-detail__actions {
+  padding-top: 4px;
+}
+
+.showroom-play {
+  background: linear-gradient(135deg, #edf4ff 0%, #ffffff 100%);
+  color: var(--showroom-primary-deep);
+}
+
+.showroom-play-state {
+  color: var(--showroom-muted);
+}
+
+.showroom-company-fields {
+  display: grid;
+  border-top: 1px solid rgba(41, 84, 162, 0.08);
+}
+
+.showroom-company-field {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  border-bottom: 1px solid rgba(41, 84, 162, 0.08);
+}
+
+.showroom-company-field dt,
+.showroom-company-field dd {
+  margin: 0;
+  padding: 14px 16px;
+  line-height: 1.6;
+}
+
+.showroom-company-field dt {
+  color: var(--showroom-primary-deep);
+  font-weight: 700;
+  border-right: 1px solid rgba(41, 84, 162, 0.08);
+  background: rgba(240, 246, 255, 0.86);
+}
+
+.showroom-company-field dd {
+  color: var(--showroom-text);
+  word-break: break-word;
+}
+
+.showroom-empty-state {
+  padding: 18px;
+  border: 1px dashed rgba(41, 84, 162, 0.2);
+  border-radius: 20px;
+  background: rgba(250, 252, 255, 0.96);
+}
+
+.showroom-state--error {
+  color: #a4394d;
+}
+
+@media (max-width: 960px) {
+  .showroom-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .showroom-header__topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 760px) {
+  .showroom-app {
+    padding: 14px;
+  }
+
+  .showroom-header,
+  .showroom-screen,
+  .showroom-state {
+    padding: 18px;
+  }
+
+  .showroom-screen--landing {
+    padding: 18px;
+  }
+
+  .showroom-company-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .showroom-company-field dt {
+    border-right: none;
+    border-bottom: 1px solid rgba(41, 84, 162, 0.08);
+  }
+
+  .showroom-language-toggle {
+    width: fit-content;
+  }
+}

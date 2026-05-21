@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "code": 200,
+  "message": "操作成功！",
+  "info": {
+    "totalCount": 10,
+    "totalPage": 2,
+    "pageSize": 9,
+    "pageIndex": 1,
+    "list": [
+      {
+        "ID": 3031,
+        "TITLE": "输液接头及附件",
+        "finfo": {
+          "FENLEI": "接头类",
+          "COVERIMAGE": "/upload/image/2024-03/col22/1710140316155.png"
+        },
+        "pageurl": "/col22/3031"
+      },
+      {
+        "ID": 1394,
+        "TITLE": "精密流量调节器",
+        "finfo": {
+          "FENLEI": "接头类",
+          "COVERIMAGE": "/upload/image/2024-02/col22/1708307865415.png"
+        },
+        "pageurl": "/col22/1394"
+      }
+    ]
+  }
+}

@@ -1,0 +1,163 @@
+import { expect, test } from "@playwright/test"
+
+const createProduct = (index) => ({
+  productId: 100 + index,
+  productCode: `P-${100 + index}`,
+  nameCn: `Guidewire System CN ${index}`,
+  nameEn: `Guidewire System ${index}`,
+  previewImageUrl: `https://cdn.example.com/products/guidewire-${index}.png`,
+  subtitleZh: `Chinese product narration ${index}`,
+  subtitleEn: `English product narration ${index}`,
+  audioZhUrl: `https://cdn.example.com/products/guidewire-${index}-zh.mp3`,
+  audioEnUrl: `https://cdn.example.com/products/guidewire-${index}-en.mp3`
+})
+
+const createApiPayload = ({ cardiologyProducts = 36 } = {}) => ({
+  company: {
+    companyId: 1,
+    name: "Yingtai Medical CN",
+    nameEn: "Yingtai Medical",
+    homeImageUrl: "https://cdn.example.com/company-home.png",
+    subtitleZh: "Company narration in Chinese",
+    subtitleEn: "English company narration",
+    audioZhUrl: "https://cdn.example.com/company-zh.mp3",
+    audioEnUrl: "https://cdn.example.com/company-en.mp3",
+    publicFields: [
+      { label: "Milestones", value: "Yingtai growth timeline" },
+      { label: "Awards", value: "National high-tech enterprise" }
+    ]
+  },
+  showrooms: [
+    {
+      hallId: 10,
+      hallCode: "CARDIOLOGY",
+      name: "Cardiology Hall CN",
+      nameEn: "Cardiology Hall",
+      description: "Chinese hall description",
+      descriptionEn: "English hall description",
+      previewImageUrl: "https://cdn.example.com/halls/cardiology.png",
+      products: Array.from({ length: cardiologyProducts }, (_, index) => createProduct(index + 1))
+    },
+    {
+      hallId: 20,
+      hallCode: "NEUROLOGY",
+      name: "Neurology Hall CN",
+      nameEn: "Neurology Hall",
+      description: "Neurology hall description",
+      descriptionEn: "Neurology hall description in English",
+      previewImageUrl: "https://cdn.example.com/halls/neurology.png",
+      products: [createProduct(99)]
+    }
+  ]
+})
+
+test("gallery arrows switch showrooms and the card region scrolls internally", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload()
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 1920, height: 911 })
+  await page.goto("/")
+
+  const swipeHeader = page.locator("[data-swipe-header]")
+  const title = page.locator("[data-active-category-title]")
+  const activeIcon = page.locator("[data-active-category-icon]")
+  const gallery = page.locator("[data-gallery-scroll-region]")
+  const lastCard = page.locator("[data-product-card]").last()
+
+  await expect(swipeHeader).toHaveAttribute("data-active-category-id", "home")
+  await expect(title).toBeVisible()
+  await expect(gallery).toBeVisible()
+  await expect(activeIcon).toHaveCount(0)
+  await expect(page.locator("[data-home-hero-image]")).toHaveCount(1)
+  await expect(page.locator("[data-product-card]")).toHaveCount(0)
+  await expect(page.locator("[data-mode-option]")).toHaveCount(0)
+  await expect(page.locator(".kiosk-header [data-language-toggle-button]")).toHaveCount(0)
+  await expect(page.locator(".kiosk-voice__header [data-language-toggle-button]")).toHaveCount(1)
+
+  await page.locator('[data-shift-category="1"]').click()
+  await expect(swipeHeader).toHaveAttribute("data-active-category-id", "cardiology")
+  await expect(title).toContainText("Cardiology Hall CN")
+  await expect(activeIcon).toHaveCount(1)
+  await expect(activeIcon).toHaveAttribute("src", /\/kiosk-hall-icons\/cardiology\.svg$/)
+
+  const galleryMetrics = await page.evaluate(() => {
+    const galleryNode = document.querySelector("[data-gallery-scroll-region]")
+
+    return {
+      clientHeight: galleryNode?.clientHeight ?? 0,
+      scrollHeight: galleryNode?.scrollHeight ?? 0
+    }
+  })
+
+  expect(galleryMetrics.scrollHeight).toBeGreaterThan(galleryMetrics.clientHeight)
+
+  const internalScrollTop = await gallery.evaluate((node) => {
+    node.scrollTop = node.scrollHeight
+    return node.scrollTop
+  })
+
+  expect(internalScrollTop).toBeGreaterThan(0)
+
+  const afterScrollBounds = await page.evaluate(() => {
+    const galleryNode = document.querySelector("[data-gallery-scroll-region]")
+    const cardNodes = document.querySelectorAll("[data-product-card]")
+    const lastCardNode = cardNodes[cardNodes.length - 1]
+
+    return {
+      galleryBottom: galleryNode?.getBoundingClientRect().bottom ?? 0,
+      lastCardBottom: lastCardNode?.getBoundingClientRect().bottom ?? 0
+    }
+  })
+
+  expect(afterScrollBounds.lastCardBottom).toBeLessThanOrEqual(afterScrollBounds.galleryBottom)
+  await expect.poll(() => page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)).toBe(0)
+
+  await gallery.evaluate((node) => {
+    node.scrollTop = 0
+  })
+
+  await expect(lastCard).toBeVisible()
+
+  await page.locator('[data-shift-category="-1"]').click()
+  await expect(swipeHeader).toHaveAttribute("data-active-category-id", "home")
+  await expect(activeIcon).toHaveCount(0)
+  await expect(page.locator("[data-home-hero-image]")).toHaveCount(1)
+  await expect(page.locator("[data-product-card]")).toHaveCount(0)
+})
+
+test("clicking the home hero opens company detail loaded from IntRuoyi and returns back home", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload({ cardiologyProducts: 1 })
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 1920, height: 911 })
+  await page.goto("/")
+
+  await expect(page.locator("[data-home-hero-image]")).toHaveCount(1)
+
+  await page.locator("[data-home-company-entry-card]").click()
+  await expect(page.locator("[data-company-detail-panel]")).toBeVisible()
+  await expect(page.locator("[data-company-detail-field]")).toHaveCount(2)
+  await expect(page.locator("[data-company-detail-title]")).toContainText("Yingtai Medical CN")
+  await expect(page.locator("body")).toContainText("Yingtai growth timeline")
+
+  await page.locator("[data-company-back]").click()
+  await expect(page.locator("[data-home-hero-image]")).toHaveCount(1)
+})

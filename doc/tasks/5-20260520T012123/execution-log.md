@@ -25,6 +25,10 @@ GREEN: `npm run build` -> PASS
 
 GREEN: `npx playwright test` -> PASS
 
+GREEN: `npx playwright test` rerun -> PASS after wiring `src/main.js` to the config-driven app and restricting Playwright to `tests/**/*.spec.js`
+
+GREEN: `npm test -- --run` rerun -> PASS after excluding Playwright specs from Vitest with `vitest.config.js`
+
 ### Phase P1
 
 - Changed paths: `src/config-schema.js`, `src/config-workbook.js`, `src/demoData.js`

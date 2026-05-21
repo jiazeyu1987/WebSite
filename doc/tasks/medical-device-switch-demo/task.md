@@ -111,3 +111,5 @@ The following assets are not available in the workspace, so the demo uses code-d
   - Added a Windows batch launcher so the demo can be started from a single `.bat` entry point with explicit prerequisite checks.
   - Fixed the root Vite entry so `http://127.0.0.1:4173/` renders the reference kiosk page again instead of the unrelated configuration-driven showroom interface.
   - Kept the newer showroom/config modules in the repo, but separated them from the homepage entry to avoid further homepage regressions.
+  - Replaced the top multi-item menu area with a single active hall title and enabled left/right swipe switching for the hall carousel on both landscape and portrait layouts.
+  - Added a dedicated root-entry regression test after the homepage entry unexpectedly reverted to the showroom console again, and restored the kiosk homepage as the active root view.

@@ -1,407 +1,510 @@
-const palette = {
-  blue: "#1b5ad9",
-  sky: "#6bb8ff",
-  green: "#24b06d",
-  gold: "#f5bc3b",
-  graphite: "#21314f",
-  silver: "#94a5c2",
-  purple: "#7c64ff"
+import { fetchShowroomAppConfig, fetchShowroomProductDetail } from "./showroom-api.js"
+
+const KIOSK_LANGUAGE_STORAGE_KEY = "medical-kiosk-language"
+const KIOSK_LANGUAGES = new Set(["zh", "en"])
+
+const SHOWROOM_TITLE_ICON_BY_HALL_CODE = {
+  cardiology: "/kiosk-hall-icons/cardiology.svg",
+  neurology: "/kiosk-hall-icons/neurology.svg",
+  peripheral: "/kiosk-hall-icons/peripheral.svg",
+  orthopedic: "/kiosk-hall-icons/orthopedic.svg",
+  urology: "/kiosk-hall-icons/urology.svg",
+  nonvascular: "/kiosk-hall-icons/nonvascular.svg",
+  prefabrication: "/kiosk-hall-icons/prefabrication.svg"
 }
 
-const sharedSpecs = [
-  { kind: "sheath", stroke: palette.blue, accent: palette.sky },
-  { kind: "loop", stroke: palette.green, accent: palette.sky },
-  { kind: "catheter", stroke: palette.graphite, accent: palette.blue },
-  { kind: "kit", stroke: palette.sky, accent: palette.purple },
-  { kind: "balloon", stroke: palette.sky, accent: palette.blue },
-  { kind: "loop", stroke: palette.green, accent: palette.gold },
-  { kind: "wire", stroke: palette.sky, accent: palette.blue },
-  { kind: "catheter", stroke: palette.gold, accent: palette.sky },
-  { kind: "arc", stroke: palette.blue, accent: palette.green },
-  { kind: "balloon", stroke: palette.sky, accent: palette.blue },
-  { kind: "stent", stroke: palette.silver, accent: palette.blue },
-  { kind: "coil", stroke: palette.silver, accent: palette.blue },
-  { kind: "wire", stroke: palette.blue, accent: palette.gold },
-  { kind: "line-kit", stroke: palette.sky, accent: palette.green },
-  { kind: "connector", stroke: palette.sky, accent: palette.blue },
-  { kind: "ring", stroke: palette.silver, accent: palette.blue }
-]
+const KIOSK_COPY = {
+  zh: {
+    languageLabel: "语言切换",
+    languageZh: "中文",
+    languageEn: "English",
+    homeTitle: "首页",
+    homeHeroAria: "打开公司详情",
+    swipeHeaderAria: "左右滑动或点击切换展厅",
+    previousHallAria: "切换到上一个展厅",
+    nextHallAria: "切换到下一个展厅",
+    loadingTitle: "正在加载展厅数据",
+    loadingBody: "当前页面只从 IntRuoyi 读取公开展示数据，不使用本地业务假数据。",
+    errorTitle: "展厅数据加载失败",
+    retryLabel: "重新加载",
+    companyDetailEyebrow: "公司详情",
+    companyDetailBack: "返回首页",
+    companyDetailEmptyTitle: "暂无公司公开信息",
+    companyDetailEmptyBody: "当前公司未发布可展示的公开字段。",
+    voiceTitle: "公开讲解",
+    voiceMuteLabel: "静音",
+    voiceUnmuteLabel: "开声",
+    voicePlayLabel: "播放讲解",
+    voicePauseLabel: "暂停讲解",
+    voiceIdle: "点击播放语音讲解",
+    voicePlaying: "正在播放语音讲解",
+    voicePaused: "已暂停",
+    voiceFailedPrefix: "播放失败：",
+    voiceUnavailable: "当前页面没有可播放的公开语音。",
+    hallEmptyBody: "当前展厅未发布公开描述。",
+    productLoadingTitle: "正在加载产品详情",
+    productErrorTitle: "产品详情加载失败",
+    productBackLabel: "返回展厅",
+    productSummaryEyebrow: "产品详情",
+    productFieldsTitle: "产品详细信息",
+    productFieldsEmpty: "当前产品未发布公开详细字段。",
+    companyTagLabel: "公司展示",
+    productCodeLabel: "产品编码"
+  },
+  en: {
+    languageLabel: "Language toggle",
+    languageZh: "中文",
+    languageEn: "English",
+    homeTitle: "Home",
+    homeHeroAria: "Open company detail",
+    swipeHeaderAria: "Swipe or click to switch halls",
+    previousHallAria: "Switch to previous hall",
+    nextHallAria: "Switch to next hall",
+    loadingTitle: "Loading showroom data",
+    loadingBody: "This page reads public showroom data from IntRuoyi only and does not use local business placeholders.",
+    errorTitle: "Failed to load showroom data",
+    retryLabel: "Reload",
+    companyDetailEyebrow: "Company Detail",
+    companyDetailBack: "Back to home",
+    companyDetailEmptyTitle: "No public company information",
+    companyDetailEmptyBody: "The current company has not published any public fields.",
+    voiceTitle: "Public narration",
+    voiceMuteLabel: "Mute audio",
+    voiceUnmuteLabel: "Unmute audio",
+    voicePlayLabel: "Play narration",
+    voicePauseLabel: "Pause narration",
+    voiceIdle: "Press to play narration",
+    voicePlaying: "Playing narration",
+    voicePaused: "Paused",
+    voiceFailedPrefix: "Playback failed: ",
+    voiceUnavailable: "No public narration audio is available for this screen.",
+    hallEmptyBody: "No public hall description has been published.",
+    productLoadingTitle: "Loading product detail",
+    productErrorTitle: "Failed to load product detail",
+    productBackLabel: "Back to hall",
+    productSummaryEyebrow: "Product Detail",
+    productFieldsTitle: "Product Details",
+    productFieldsEmpty: "No public product detail fields have been published.",
+    companyTagLabel: "Company display",
+    productCodeLabel: "Product code"
+  }
+}
 
-const baseProductNames = [
-  "导入鞘套组",
-  "亲水导管",
-  "塑形导管",
-  "输送组件",
-  "球囊扩张导管",
-  "微导丝",
-  "支架系统",
-  "血栓回收装置",
-  "封堵器组件",
-  "三通连接件",
-  "压力延长管",
-  "冲洗回路"
-]
+const resolveLanguage = (value) => (KIOSK_LANGUAGES.has(value) ? value : "zh")
+const isEnglish = (language) => language === "en"
+const getUiCopy = (language) => KIOSK_COPY[language] ?? KIOSK_COPY.zh
 
-const makeProducts = (prefix, names, specOffset = 0) =>
-  Array.from({ length: 3 }, (_, batchIndex) =>
-    names.map((name, index) => ({
-      id: `${prefix}-${batchIndex + 1}-${index + 1}`,
-      name,
-      art: sharedSpecs[(index + batchIndex * 3 + specOffset) % sharedSpecs.length]
-    }))
-  ).flat()
+const readPersistedLanguage = (storage) => resolveLanguage(storage?.getItem(KIOSK_LANGUAGE_STORAGE_KEY) ?? "zh")
+const persistLanguage = (storage, language) => storage?.setItem(KIOSK_LANGUAGE_STORAGE_KEY, language)
 
-const createCategory = (id, title, specOffset, voiceCopy) => ({
-  id,
-  title,
-  voiceTitle: "语音讲解",
-  voiceCopy,
-  products: makeProducts(id, baseProductNames, specOffset)
-})
+const getCompanyName = (company, language) => (isEnglish(language) ? company.nameEn : company.name)
+const getCompanySubtitle = (company, language) => (isEnglish(language) ? company.subtitleEn : company.subtitleZh)
+const getCompanyAudioSrc = (company, language) => (isEnglish(language) ? company.audioEn : company.audioZh)
+const getHallName = (hall, language) => (isEnglish(language) ? hall.nameEn : hall.name)
+const getHallDescription = (hall, language) => (isEnglish(language) ? hall.descriptionEn : hall.description)
+const getProductName = (product, language) => (isEnglish(language) ? product.nameEn : product.nameCn)
+const getProductSubtitle = (product, language) => (isEnglish(language) ? product.subtitleEn : product.subtitleZh)
+const getProductAudioSrc = (product, language) => (isEnglish(language) ? product.audioEn : product.audioZh)
 
-export const kioskCategories = [
-  createCategory("home", "首页", 0, [
-    "欢迎来到产品展示平台。这里汇集了公司在介入医疗领域的核心器械与典型组合方案。",
-    "页面通过统一的蓝白医疗语气和卡片矩阵，帮助来访者快速浏览产品品类、轮廓特征和重点讲解路径。",
-    "点击任意一张卡片后，可进入独立详情页查看图文说明，并从顶部返回按钮继续浏览其他器械。"
-  ]),
-  createCategory("cardiology", "心内介入展厅", 2, [
-    "心内介入展厅强调导管、导丝、球囊与配套器械的整体协同关系。",
-    "展示视图保持统一结构，便于在接待、培训和会场演示中快速切换不同产品。",
-    "后续如需替换成真实产品图片与讲解素材，可直接沿用这一套前端骨架。"
-  ]),
-  createCategory("neurology", "神经介入展厅", 4, [
-    "神经介入展厅更强调柔顺通过、远端显影与精细输送。",
-    "页面用更纤细的器械线稿表达产品路径，帮助访客快速理解器械定位。",
-    "在正式素材到位后，这一页可以直接承接客户讲解与内部培训。"
-  ]),
-  createCategory("peripheral", "外周介入展厅", 1, [
-    "外周介入展厅延续浅蓝医疗语气，但通过更长的器械比例强化通路感。",
-    "右侧讲解区适合承接展厅播报、触屏讲稿或销售接待摘要。",
-    "后续接入真实 CMS 时，当前交互骨架也可以继续复用。"
-  ]),
-  createCategory("orthopedic", "骨科介入展厅", 6, [
-    "骨科介入展厅保持统一页面语言，同时通过更稳重的线条密度表达器械支撑感。",
-    "卡片区采用一致圆角和淡阴影，能在替换真实素材前先稳定版式节奏。",
-    "这一版尤其适合做风格校准与讲解节奏验证。"
-  ]),
-  createCategory("urology", "泌尿介入展厅", 3, [
-    "泌尿介入展厅适合展示导管、导丝、取石与配套附件的组合关系。",
-    "页面整体避免厚重装饰，更依赖留白、细边框和高对比器械图形建立专业感。",
-    "如需扩展筛选或二级切换，也能在不破坏当前主视图的前提下继续增加。"
-  ]),
-  createCategory("nonvascular", "非血管介入及其他展厅", 5, [
-    "非血管介入及其他展厅更适合作为多学科集合入口，因此文案更偏概览。",
-    "统一网格和面板比例能帮助访客快速比较不同分组的信息密度。",
-    "如果后续补齐真实 SKU、主图和分类图形，这一页可以较低成本升级为正式版本。"
-  ]),
-  createCategory("prefabrication", "医疗预制件展厅", 7, [
-    "医疗预制件展厅更偏向展示零部件、接头与基础组件的组合方式。",
-    "右侧文案区可以切换成制造工艺、材料体系或代工服务说明。",
-    "当前版本先复刻视觉语气与交互结构，后续再接入真实企业素材即可。"
-  ])
-]
+const getHallIconSrc = (hall) => {
+  const hallCode = typeof hall?.code === "string" ? hall.code.trim().toLowerCase() : ""
+  return SHOWROOM_TITLE_ICON_BY_HALL_CODE[hallCode] ?? null
+}
 
-const createProductArt = ({ kind, stroke, accent }) => {
-  const base = `stroke="${stroke}" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"`
-  const accentStroke = `stroke="${accent}" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"`
-
-  const artMap = {
-    sheath: `
-      <line x1="34" y1="78" x2="214" y2="78" ${base} />
-      <rect x="16" y="68" width="20" height="20" rx="4" stroke="${accent}" fill="rgba(107,184,255,0.18)" stroke-width="3.2" />
-    `,
-    loop: `
-      <path d="M176 36c-34 20-74 84-30 86 30 2 54-34 66-82" ${base} />
-      <circle cx="184" cy="38" r="4" fill="${accent}" />
-    `,
-    catheter: `
-      <path d="M26 100C76 44 110 28 202 36" ${base} />
-      <path d="M202 36c10 1 18 5 22 8" ${accentStroke} />
-    `,
-    kit: `
-      <line x1="50" y1="34" x2="50" y2="114" ${base} />
-      <line x1="94" y1="28" x2="94" y2="120" ${accentStroke} />
-      <line x1="138" y1="40" x2="138" y2="108" ${base} />
-      <line x1="182" y1="34" x2="182" y2="114" ${accentStroke} />
-      <line x1="226" y1="48" x2="226" y2="102" ${base} />
-      <circle cx="50" cy="58" r="6" fill="${accent}" />
-      <circle cx="138" cy="52" r="6" fill="${accent}" />
-    `,
-    balloon: `
-      <line x1="24" y1="88" x2="214" y2="54" ${base} />
-      <ellipse cx="126" cy="70" rx="46" ry="18" stroke="${accent}" fill="rgba(107,184,255,0.12)" stroke-width="3.2" />
-    `,
-    wire: `
-      <line x1="22" y1="84" x2="220" y2="84" ${base} />
-      <circle cx="36" cy="84" r="5" fill="${accent}" />
-      <circle cx="86" cy="84" r="3.5" fill="${accent}" />
-      <circle cx="136" cy="84" r="3.5" fill="${accent}" />
-      <circle cx="186" cy="84" r="3.5" fill="${accent}" />
-    `,
-    stent: `
-      <path d="M36 94 84 48l48 46 48-46 48 46" ${base} />
-      <path d="M36 60 84 106l48-46 48 46 48-46" ${accentStroke} />
-      <line x1="24" y1="84" x2="236" y2="70" stroke="${stroke}" stroke-width="2" stroke-linecap="round" />
-    `,
-    coil: `
-      <path d="M72 76c0-23 18-42 42-42 24 0 42 19 42 42 0 23-18 42-42 42-24 0-42-19-42-42Z" ${base} />
-      <path d="M106 46c12 8 22 24 22 42 0 18-10 34-22 42" ${accentStroke} />
-      <line x1="156" y1="76" x2="216" y2="76" ${base} />
-    `,
-    arc: `
-      <path d="M42 98c24-50 70-70 152-42" ${base} />
-      <path d="M194 56c16 6 24 14 30 22" ${accentStroke} />
-    `,
-    "line-kit": `
-      <line x1="32" y1="78" x2="216" y2="78" ${base} />
-      <rect x="60" y="66" width="24" height="24" rx="4" stroke="${accent}" fill="rgba(126,229,193,0.15)" stroke-width="3.2" />
-      <rect x="120" y="68" width="26" height="20" rx="4" stroke="${stroke}" fill="rgba(29,90,217,0.08)" stroke-width="3.2" />
-      <rect x="176" y="62" width="20" height="32" rx="4" stroke="${accent}" fill="rgba(126,229,193,0.15)" stroke-width="3.2" />
-    `,
-    connector: `
-      <line x1="28" y1="78" x2="220" y2="78" ${base} />
-      <rect x="82" y="62" width="26" height="32" rx="5" stroke="${accent}" fill="rgba(107,184,255,0.16)" stroke-width="3.2" />
-      <rect x="144" y="66" width="18" height="24" rx="4" stroke="${stroke}" fill="rgba(29,90,217,0.12)" stroke-width="3.2" />
-    `,
-    ring: `
-      <ellipse cx="124" cy="76" rx="66" ry="42" ${base} />
-      <ellipse cx="124" cy="76" rx="48" ry="28" ${accentStroke} />
-    `
+const getActiveCategoryId = (hall) => {
+  if (!hall) {
+    return "home"
   }
 
-  return `
-    <svg class="kiosk-product-art" viewBox="0 0 248 152" aria-hidden="true" role="img">
-      ${artMap[kind] ?? artMap.sheath}
-    </svg>
-  `
+  const hallCode = typeof hall.code === "string" ? hall.code.trim().toLowerCase() : ""
+  return hallCode !== "" ? hallCode : String(hall.id)
 }
 
-const createCardsMarkup = (products) =>
-  products
-    .map(
-      (product) => `
-        <article class="kiosk-card" data-product-card data-product-id="${product.id}" aria-label="${product.name}">
-          <div class="kiosk-card__glow"></div>
-          <div class="kiosk-card__art">${createProductArt(product.art)}</div>
-        </article>
-      `
-    )
-    .join("")
+const splitParagraphs = (text) => {
+  if (typeof text !== "string") {
+    return []
+  }
 
-const createCompanyLogoMarkup = () => `
-  <svg class="kiosk-company-logo" viewBox="0 0 420 180" aria-hidden="true" role="img">
-    <defs>
-      <linearGradient id="kiosk-logo-mark" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${palette.sky}" />
-        <stop offset="55%" stop-color="${palette.blue}" />
-        <stop offset="100%" stop-color="${palette.green}" />
-      </linearGradient>
-    </defs>
-    <rect x="22" y="22" width="376" height="136" rx="32" fill="rgba(255,255,255,0.92)" />
-    <g transform="translate(56 42)">
-      <rect x="0" y="0" width="88" height="88" rx="24" fill="rgba(28,95,212,0.08)" />
-      <path d="M24 58c8-18 22-30 42-36 8-2 16-3 22-2-5 20-15 36-32 48-12 8-24 12-38 14 2-8 4-16 6-24Z" fill="url(#kiosk-logo-mark)" />
-      <circle cx="72" cy="26" r="5" fill="${palette.gold}" />
-    </g>
-    <text x="168" y="78" fill="${palette.blue}" font-size="30" font-weight="700" letter-spacing="6">盈泰医疗</text>
-    <text x="170" y="108" fill="${palette.silver}" font-size="18" font-weight="600" letter-spacing="2">YINGTAI MEDICAL</text>
-  </svg>
-`
-
-const createHomeLogoCardMarkup = () => `
-  <section class="kiosk-gallery kiosk-gallery--home-logo" data-gallery-scroll-region aria-label="首页公司 Logo 卡片区">
-    <div class="kiosk-gallery__single-card">
-      <article class="kiosk-home-logo-card" data-company-logo-card aria-label="盈泰医疗公司 Logo">
-        ${createCompanyLogoMarkup()}
-      </article>
-    </div>
-  </section>
-`
-
-const artKindLabels = {
-  sheath: "导入鞘",
-  loop: "环形导丝",
-  catheter: "导管",
-  kit: "组合套件",
-  balloon: "球囊器械",
-  wire: "导丝",
-  stent: "支架系统",
-  coil: "线圈系统",
-  arc: "弧形导管",
-  "line-kit": "连接组件",
-  connector: "连接阀组",
-  ring: "环形组件"
+  return text
+    .split(/\r?\n+/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "")
 }
 
-const getArtKindLabel = (kind) => artKindLabels[kind] ?? kind
-
-const buildProductSummaryLines = (category, product) => [
-  `${product.name} 以 ${getArtKindLabel(product.art.kind)} 的轻量化轮廓作为主视觉，适合在 ${category.title} 中用于客户接待、培训讲解与触屏导览。`
-]
-
-const buildProductTranscript = (category, product) => [
-  `${product.name} 是 ${category.title} 中的重点展示器械，详情页延续首页的浅蓝医疗氛围，以居中的主图呈现产品轮廓与结构节奏。`,
-  `${getArtKindLabel(product.art.kind)} 示意图采用简洁的线性表达方式，强化器械路径、末端结构和整体比例关系，让浏览者在远距离观看时也能快速识别产品类型。`,
-  "左侧详情区承接图文说明与讲解控制，右侧则保持当前展厅级语音讲解栏不变，让访问者在查看产品细节时仍能保留场馆级讲解上下文。"
-]
-
-const buildProductTags = (category, product) => [category.title, `${getArtKindLabel(product.art.kind)}示意图`, "图文讲解联动"]
-
-const isAudibleNarration = (state) => state.isSpeaking && !state.isMuted && state.speechStatus !== "unsupported"
-
-const createWaveMarkup = (className = "kiosk-voice__wave", isActive = true) => `
-  <div class="${className}" data-wave-active="${isActive ? "true" : "false"}" aria-hidden="true">
+const createWaveMarkup = (isActive) => `
+  <div class="kiosk-voice__wave" data-wave-active="${isActive ? "true" : "false"}" aria-hidden="true">
     <span></span><span></span><span></span><span></span><span></span><span></span>
   </div>
 `
 
-const createVoiceToggleIcon = (state) =>
-  state.isMuted
-    ? `
-        <svg class="kiosk-voice__toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M5 10.5h3.4L13 7v10l-4.6-3.5H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-          <path d="M16 9 20 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          <path d="M20 9 16 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
-      `
-    : `
-        <svg class="kiosk-voice__toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M5 10.5h3.4L13 7v10l-4.6-3.5H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-          <path d="M16 10.2a3 3 0 0 1 0 3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          <path d="M18.7 8a6 6 0 0 1 0 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
-      `
-
-const createVoiceMarkup = (category, state) => `
-  <aside class="kiosk-voice" data-active-category-id="${category.id}">
-    <div class="kiosk-voice__header">
-      <h2 class="kiosk-voice__title">${category.voiceTitle}</h2>
-      <div class="kiosk-voice__header-tools">
-        <button
-          class="kiosk-voice__toggle${state.isMuted ? " is-muted" : " is-unmuted"}"
-          type="button"
-          data-speech-mute-toggle
-          data-audio-state="${state.isMuted ? "muted" : "unmuted"}"
-          aria-label="${state.isMuted ? "开声" : "静音"}"
-          title="${state.isMuted ? "开声" : "静音"}"
-        >
-          ${createVoiceToggleIcon(state)}
-        </button>
-        ${createWaveMarkup("kiosk-voice__wave", isAudibleNarration(state))}
-      </div>
-    </div>
-    <div class="kiosk-voice__copy" data-voice-copy>
-      ${category.voiceCopy.map((paragraph) => `<p>${paragraph}</p>`).join("")}
-    </div>
-  </aside>
-`
-
-const getSpeakingStateCopy = (state) => {
-  if (state.isMuted && state.isSpeaking) {
-    return "已静音，仅显示文字"
+const createLanguageIconMarkup = (language) => {
+  if (language === "en") {
+    return `
+      <svg class="kiosk-icon-button__icon kiosk-icon-button__icon--language" viewBox="0 0 48 48" aria-hidden="true">
+        <circle class="kiosk-language-icon__disc" cx="24" cy="24" r="17" />
+        <path class="kiosk-language-icon__orbit" d="M12 25c5-6 19-8 27-3" />
+        <path class="kiosk-language-icon__orbit" d="M16 34c7 3 17 2 24-4" />
+        <path class="kiosk-language-icon__spark" d="M35 11l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" />
+        <text x="24" y="28.5" text-anchor="middle" class="kiosk-language-icon__text kiosk-language-icon__text--en">EN</text>
+      </svg>
+    `
   }
 
-  if (state.isMuted) {
-    return "已静音，点击播放语音讲解"
-  }
-
-  if (state.speechStatus === "unsupported") {
-    return "当前浏览器不支持语音讲解"
-  }
-
-  if (state.isSpeaking) {
-    return "正在播放语音讲解"
-  }
-
-  return "点击播放语音讲解"
+  return `
+    <svg class="kiosk-icon-button__icon kiosk-icon-button__icon--language" viewBox="0 0 48 48" aria-hidden="true">
+      <circle class="kiosk-language-icon__disc" cx="24" cy="24" r="17" />
+      <path class="kiosk-language-icon__orbit" d="M12 25c5-6 19-8 27-3" />
+      <path class="kiosk-language-icon__orbit" d="M16 34c7 3 17 2 24-4" />
+      <path class="kiosk-language-icon__spark" d="M35 11l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" />
+      <path
+        class="kiosk-language-icon__glyph"
+        d="M17 18h14M24 14v22M18 26h12M20 26c1 4 3 7 4 9M28 26c-1 4-3 7-4 9"
+      />
+    </svg>
+  `
 }
 
-const createDetailMarkup = (category, product, state) => {
-  const summaryLines = buildProductSummaryLines(category, product)
-  const transcript = buildProductTranscript(category, product)
-  const tags = buildProductTags(category, product)
+const createSpeakerIconMarkup = (isMuted) => {
+  if (isMuted) {
+    return `
+      <svg class="kiosk-icon-button__icon" viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M10 20h8l10-8v24l-10-8h-8z" fill="currentColor" />
+        <path d="M34 18l8 12M42 18l-8 12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+      </svg>
+    `
+  }
+
+  return `
+    <svg class="kiosk-icon-button__icon" viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M10 20h8l10-8v24l-10-8h-8z" fill="currentColor" />
+      <path d="M34 18c3 3 3 9 0 12M39 13c6 6 6 16 0 22" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" />
+    </svg>
+  `
+}
+
+const createLanguageToggleMarkup = (language) => {
+  const copy = getUiCopy(language)
+  const nextLanguage = language === "zh" ? "en" : "zh"
+
+  return `
+    <button
+      class="kiosk-icon-button kiosk-icon-button--language"
+      type="button"
+      data-language-toggle-button
+      data-language-option="${nextLanguage}"
+      data-language-current="${language}"
+      aria-label="${copy.languageLabel}"
+      title="${copy.languageLabel}"
+    >
+      ${createLanguageIconMarkup(language)}
+    </button>
+  `
+}
+
+const createActiveCategoryTitleMarkup = (title, iconSrc) => {
+  if (!iconSrc) {
+    return `<span class="kiosk-title-strip__title-copy">${title}</span>`
+  }
+
+  return `
+    <span class="kiosk-title-strip__title-badge">
+      <img
+        class="kiosk-title-strip__icon"
+        data-active-category-icon
+        src="${iconSrc}"
+        alt=""
+        aria-hidden="true"
+      />
+      <span class="kiosk-title-strip__title-copy">${title}</span>
+    </span>
+  `
+}
+
+const createHomeHeroMarkup = (company, language, copy) => `
+  <section class="kiosk-gallery kiosk-gallery--home-hero" data-gallery-scroll-region aria-label="${getCompanyName(company, language)}">
+    <div class="kiosk-gallery__hero-stage">
+      <button class="kiosk-home-hero" type="button" data-home-company-entry-card aria-label="${copy.homeHeroAria}">
+        <img
+          class="kiosk-home-hero__image"
+          data-home-hero-image
+          src="${company.homeImage}"
+          alt="${getCompanyName(company, language)}"
+        />
+      </button>
+    </div>
+  </section>
+`
+
+const createCompanyFieldMarkup = (field, index) => `
+  <div class="kiosk-company-detail__field" data-company-detail-field data-company-detail-field-index="${index}">
+    <dt>${field.label}</dt>
+    <dd>${field.value}</dd>
+  </div>
+`
+
+const createCompanyDetailMarkup = (company, state) => {
+  const copy = getUiCopy(state.language)
+  const companyName = getCompanyName(company, state.language)
+  const companySubtitle = getCompanySubtitle(company, state.language)
+
+  return `
+    <section class="kiosk-company-detail" data-company-detail-panel>
+      <header class="kiosk-company-detail__header">
+        <button class="kiosk-company-detail__back" type="button" data-company-back>${copy.companyDetailBack}</button>
+        <p class="kiosk-detail__eyebrow">${copy.companyDetailEyebrow}</p>
+        <h2 class="kiosk-company-detail__title" data-company-detail-title>${companyName}</h2>
+        <p class="kiosk-company-detail__copy" data-company-detail-copy>${companySubtitle}</p>
+      </header>
+      <div class="kiosk-company-detail__image-wrap">
+        <img class="kiosk-company-detail__image" src="${company.homeImage}" alt="${companyName}" />
+      </div>
+      ${
+        company.publicFields.length > 0
+          ? `
+            <dl class="kiosk-company-detail__fields" data-company-detail-fields>
+              ${company.publicFields.map((field, index) => createCompanyFieldMarkup(field, index)).join("")}
+            </dl>
+          `
+          : `
+            <section class="kiosk-company-detail__empty" data-company-detail-empty>
+              <h3>${copy.companyDetailEmptyTitle}</h3>
+              <p>${copy.companyDetailEmptyBody}</p>
+            </section>
+          `
+      }
+    </section>
+  `
+}
+
+const createProductCardMarkup = (product, language) => `
+  <article class="kiosk-card" data-product-card data-product-id="${product.id}" aria-label="${getProductName(product, language)}">
+    <div class="kiosk-card__glow"></div>
+    <div class="kiosk-card__art">
+      <img class="kiosk-card__image" src="${product.previewImageUrl}" alt="${getProductName(product, language)}" />
+    </div>
+    <span class="kiosk-card__label" data-product-card-label>${getProductName(product, language)}</span>
+  </article>
+`
+
+const createGalleryMarkup = (hall, language) => `
+  <section class="kiosk-gallery" data-gallery-scroll-region aria-label="${getHallName(hall, language)}">
+    <div class="kiosk-gallery__grid">
+      ${hall.products.map((product) => createProductCardMarkup(product, language)).join("")}
+    </div>
+  </section>
+`
+
+const createProductDescriptionLines = (detail, copy) => {
+  if (!detail || detail.publicFields.length === 0) {
+    return `<p data-product-description-line>${copy.productFieldsEmpty}</p>`
+  }
+
+  return detail.publicFields
+    .map(
+      (field, index) => `
+        <p data-product-description-line data-product-field-index="${index}">
+          <strong>${field.label}</strong>: ${field.value}
+        </p>
+      `
+    )
+    .join("")
+}
+
+const createProductDetailMarkup = (hall, product, state) => {
+  const copy = getUiCopy(state.language)
+  const detail = state.productDetailData
+  const productName = getProductName(product, state.language)
+  const productSubtitle = getProductSubtitle(product, state.language)
+  const hallTitle = getHallName(hall, state.language)
+
+  if (state.productDetailLoadState === "loading") {
+    return `
+      <section class="kiosk-detail" data-product-detail-loading>
+        <header class="kiosk-detail__header">
+          <button class="kiosk-detail__back" type="button" data-back-to-gallery>${copy.productBackLabel}</button>
+        </header>
+        <article class="kiosk-detail__hero">
+          <div class="kiosk-detail__copy">
+            <p class="kiosk-detail__eyebrow">${copy.productSummaryEyebrow}</p>
+            <h2 class="kiosk-detail__title">${copy.productLoadingTitle}</h2>
+          </div>
+        </article>
+      </section>
+    `
+  }
+
+  if (state.productDetailLoadState === "error") {
+    return `
+      <section class="kiosk-detail" data-product-detail-error>
+        <header class="kiosk-detail__header">
+          <button class="kiosk-detail__back" type="button" data-back-to-gallery>${copy.productBackLabel}</button>
+          <p class="kiosk-detail__state">${state.productDetailErrorMessage}</p>
+        </header>
+        <article class="kiosk-detail__hero">
+          <div class="kiosk-detail__copy">
+            <p class="kiosk-detail__eyebrow">${copy.productSummaryEyebrow}</p>
+            <h2 class="kiosk-detail__title">${copy.productErrorTitle}</h2>
+          </div>
+        </article>
+      </section>
+    `
+  }
 
   return `
     <section class="kiosk-detail" data-product-detail-id="${product.id}">
       <header class="kiosk-detail__header">
-        <button class="kiosk-detail__back" type="button" data-back-to-gallery>返回展厅</button>
-        <p class="kiosk-detail__state" data-speaking-state>${getSpeakingStateCopy(state)}</p>
+        <button class="kiosk-detail__back" type="button" data-back-to-gallery>${copy.productBackLabel}</button>
+        <p class="kiosk-detail__state" data-speaking-state>${state.playbackMessage}</p>
       </header>
       <article class="kiosk-detail__hero">
         <div class="kiosk-detail__hero-stage">
           <div class="kiosk-detail__hero-glow"></div>
-          <div class="kiosk-detail__art" data-product-hero-art>${createProductArt(product.art)}</div>
+          <div class="kiosk-detail__art">
+            <img class="kiosk-detail__hero-image" src="${product.previewImageUrl}" alt="${productName}" />
+          </div>
         </div>
         <div class="kiosk-detail__copy">
-          <p class="kiosk-detail__eyebrow">产品详情 / ${category.title}</p>
-          <h2 class="kiosk-detail__title" data-product-detail-title>${product.name}</h2>
+          <p class="kiosk-detail__eyebrow">${copy.productSummaryEyebrow} / ${hallTitle}</p>
+          <h2 class="kiosk-detail__title" data-product-detail-title>${productName}</h2>
           <div class="kiosk-detail__summary-block">
-            ${summaryLines.map((line) => `<p class="kiosk-detail__summary">${line}</p>`).join("")}
+            <p class="kiosk-detail__summary">${productSubtitle}</p>
           </div>
           <div class="kiosk-detail__tags" data-product-tags>
-            ${tags
-              .map(
-                (tag, index) => `
-                  <span class="kiosk-detail__tag" data-product-tag data-product-tag-index="${index}">
-                    ${tag}
-                  </span>
-                `
-              )
-              .join("")}
+            <span class="kiosk-detail__tag" data-product-tag>${hallTitle}</span>
+            <span class="kiosk-detail__tag" data-product-tag>${copy.productCodeLabel}: ${product.code}</span>
           </div>
-          <button class="kiosk-detail__speak" type="button" data-speech-toggle>
-            ${state.isSpeaking ? "停止讲解" : "播放讲解"}
-          </button>
         </div>
       </article>
       <section class="kiosk-detail__description" data-product-description-panel>
         <div class="kiosk-detail__description-header">
-          <h3 class="kiosk-detail__description-title" data-product-description-title>产品描述</h3>
-          ${createWaveMarkup("kiosk-voice__wave kiosk-detail__wave", isAudibleNarration(state))}
+          <h3 class="kiosk-detail__description-title" data-product-description-title>${copy.productFieldsTitle}</h3>
+          ${createWaveMarkup(state.playbackStatus === "playing" && !state.isMuted)}
         </div>
         <div class="kiosk-detail__description-copy">
-          ${transcript
-            .map((line) => `<p data-product-description-line data-transcript-line>${line}</p>`)
-            .join("")}
+          ${createProductDescriptionLines(detail, copy)}
         </div>
       </section>
     </section>
   `
 }
 
-const createMarkup = (categories, state) => {
-  const activeCategory = categories.find((category) => category.id === state.activeCategoryId) ?? categories[0]
-  const activeProduct = activeCategory.products.find((product) => product.id === state.activeProductId) ?? null
-  const isHomeLogoScreen = !activeProduct && activeCategory.id === "home"
+const createVoicePanelMarkup = (state, lines, hasAudio) => {
+  const copy = getUiCopy(state.language)
 
   return `
-    <div class="kiosk-shell" data-reference-layout="medical-kiosk" data-kiosk-screen="${activeProduct ? "detail" : "gallery"}">
+    <aside class="kiosk-voice" data-active-category-id="${state.activeCategoryId}">
+      <div class="kiosk-voice__header">
+        <h2 class="kiosk-voice__title">${copy.voiceTitle}</h2>
+        <div class="kiosk-voice__header-tools">
+          ${createLanguageToggleMarkup(state.language)}
+          ${
+            hasAudio
+              ? `
+                <button
+                  class="kiosk-icon-button kiosk-icon-button--audio ${state.isMuted ? "is-muted" : "is-unmuted"}"
+                  type="button"
+                  data-speech-mute-toggle
+                  data-audio-state="${state.isMuted ? "muted" : "unmuted"}"
+                  aria-label="${state.isMuted ? copy.voiceUnmuteLabel : copy.voiceMuteLabel}"
+                  title="${state.isMuted ? copy.voiceUnmuteLabel : copy.voiceMuteLabel}"
+                >
+                  ${createSpeakerIconMarkup(state.isMuted)}
+                </button>
+              `
+              : ""
+          }
+          ${hasAudio ? createWaveMarkup(state.playbackStatus === "playing" && !state.isMuted) : ""}
+        </div>
+      </div>
+      <div class="kiosk-voice__copy" data-voice-copy>
+        ${lines.map((line) => `<p>${line}</p>`).join("")}
+      </div>
+      ${
+        hasAudio
+          ? `
+            <button class="kiosk-detail__speak" type="button" data-speech-toggle>
+              ${state.playbackStatus === "playing" ? copy.voicePauseLabel : copy.voicePlayLabel}
+            </button>
+          `
+          : ""
+      }
+    </aside>
+  `
+}
+
+const createLoadingMarkup = (language) => {
+  const copy = getUiCopy(language)
+
+  return `
+    <section class="kiosk-company-detail" data-screen="kiosk-loading">
+      <header class="kiosk-company-detail__header">
+        <p class="kiosk-detail__eyebrow">Showroom Runtime</p>
+        <h2 class="kiosk-company-detail__title">${copy.loadingTitle}</h2>
+        <p class="kiosk-company-detail__copy">${copy.loadingBody}</p>
+      </header>
+    </section>
+  `
+}
+
+const createErrorMarkup = (language, errorMessage) => {
+  const copy = getUiCopy(language)
+
+  return `
+    <section class="kiosk-company-detail" data-screen="kiosk-error">
+      <header class="kiosk-company-detail__header">
+        <p class="kiosk-detail__eyebrow">Showroom Runtime</p>
+        <h2 class="kiosk-company-detail__title">${copy.errorTitle}</h2>
+        <p class="kiosk-company-detail__copy" data-kiosk-error-message>${errorMessage}</p>
+      </header>
+      <button class="kiosk-company-detail__retry" type="button" data-retry-load>${copy.retryLabel}</button>
+    </section>
+  `
+}
+
+const createReadyMarkup = (state) => {
+  const copy = getUiCopy(state.language)
+  const company = state.config.company
+  const hall = state.activeHallSlot === 0 ? null : state.config.showrooms[state.activeHallSlot - 1]
+  const product = hall?.products.find((item) => item.id === state.selectedProductId) ?? null
+  const activeCategoryTitle = hall ? getHallName(hall, state.language) : copy.homeTitle
+  const activeIconSrc = hall ? getHallIconSrc(hall) : null
+  const currentVoiceLines = hall
+    ? state.screen === "product"
+      ? splitParagraphs(getProductSubtitle(product, state.language))
+      : splitParagraphs(getHallDescription(hall, state.language))
+    : splitParagraphs(getCompanySubtitle(company, state.language))
+  const voiceLines =
+    currentVoiceLines.length > 0 ? currentVoiceLines : hall ? [copy.hallEmptyBody] : [getCompanySubtitle(company, state.language)]
+  const hasAudio = state.audioSource !== ""
+  const kioskScreen = state.screen === "product" ? "detail" : "gallery"
+
+  return `
+    <div class="kiosk-shell" data-reference-layout="medical-kiosk" data-kiosk-screen="${kioskScreen}">
       <header class="kiosk-header">
         <div class="kiosk-header__halo kiosk-header__halo--left"></div>
         <div class="kiosk-header__halo kiosk-header__halo--right"></div>
         <div
           class="kiosk-title-strip"
           data-swipe-header
-          data-active-category-id="${activeCategory.id}"
+          data-active-category-id="${state.activeCategoryId}"
           tabindex="0"
           role="group"
-          aria-label="左右滑动或点击切换展厅"
+          aria-label="${copy.swipeHeaderAria}"
         >
           <button
             class="kiosk-title-strip__nav kiosk-title-strip__nav--left"
             type="button"
             data-shift-category="-1"
-            aria-label="切换到上一个展厅"
+            aria-label="${copy.previousHallAria}"
           >
             <span class="kiosk-title-strip__chevron kiosk-title-strip__chevron--left" aria-hidden="true"></span>
           </button>
-          <p class="kiosk-title-strip__title" data-active-category-title>${activeCategory.title}</p>
+          <p class="kiosk-title-strip__title" data-active-category-title>${createActiveCategoryTitleMarkup(activeCategoryTitle, activeIconSrc)}</p>
           <button
             class="kiosk-title-strip__nav kiosk-title-strip__nav--right"
             type="button"
             data-shift-category="1"
-            aria-label="切换到下一个展厅"
+            aria-label="${copy.nextHallAria}"
           >
             <span class="kiosk-title-strip__chevron kiosk-title-strip__chevron--right" aria-hidden="true"></span>
           </button>
@@ -409,57 +512,44 @@ const createMarkup = (categories, state) => {
       </header>
       <main class="kiosk-content" data-responsive-layout="swipe-title landscape-sidebar portrait-bottom-panel">
         ${
-          activeProduct
-            ? createDetailMarkup(activeCategory, activeProduct, state)
-            : isHomeLogoScreen
-              ? createHomeLogoCardMarkup()
-              : `
-              <section class="kiosk-gallery" data-gallery-scroll-region aria-label="${activeCategory.title}产品卡片区">
-                <div class="kiosk-gallery__grid">
-                  ${createCardsMarkup(activeCategory.products)}
-                </div>
-              </section>
-            `
+          state.screen === "company"
+            ? createCompanyDetailMarkup(company, state)
+            : state.screen === "product" && hall && product
+              ? createProductDetailMarkup(hall, product, state)
+              : hall
+                ? createGalleryMarkup(hall, state.language)
+                : createHomeHeroMarkup(company, state.language, copy)
         }
-        ${createVoiceMarkup(activeCategory, state)}
+        <section>
+          <div style="display:grid; gap:16px;">
+            ${createVoicePanelMarkup(state, voiceLines, hasAudio)}
+          </div>
+        </section>
       </main>
     </div>
   `
 }
 
-const getWrappedIndex = (currentIndex, delta, total) => (currentIndex + delta + total) % total
-
-const resolveSpeechRuntime = (root, options) => {
-  const view = root.ownerDocument?.defaultView
-  const injectedRuntime = view?.__MEDICAL_KIOSK_SPEECH_RUNTIME__ ?? null
-  const synthesis = options.speechSynthesis ?? injectedRuntime?.speechSynthesis ?? view?.speechSynthesis ?? null
-  const Utterance =
-    options.SpeechSynthesisUtterance ?? injectedRuntime?.SpeechSynthesisUtterance ?? view?.SpeechSynthesisUtterance ?? null
-
-  return {
-    supported: Boolean(synthesis && typeof synthesis.speak === "function" && typeof Utterance === "function"),
-    synthesis,
-    Utterance
-  }
-}
-
-const findClosestActionTarget = (event, selector) => {
-  if (typeof event.composedPath === "function") {
-    for (const node of event.composedPath()) {
-      if (node instanceof Element) {
-        const match = node.closest(selector)
-        if (match) {
-          return match
-        }
-      }
+const createAppMarkup = (state) => `
+  <div class="kiosk-app" data-load-state="${state.loadState}" data-language-current="${state.language}">
+    ${
+      state.loadState === "loading"
+        ? createLoadingMarkup(state.language)
+        : state.loadState === "error"
+          ? createErrorMarkup(state.language, state.errorMessage)
+          : createReadyMarkup(state)
     }
+  </div>
+`
+
+const resolveAudioFactory = (options) => {
+  const createAudio = options.createAudio ?? ((src) => new Audio(src))
+
+  if (typeof createAudio !== "function") {
+    throw new Error("Kiosk audio factory is required.")
   }
 
-  if (event.target instanceof Element) {
-    return event.target.closest(selector)
-  }
-
-  return event.target?.parentElement?.closest?.(selector) ?? null
+  return createAudio
 }
 
 export const createMedicalKioskApp = (root, options = {}) => {
@@ -467,15 +557,22 @@ export const createMedicalKioskApp = (root, options = {}) => {
     throw new Error("Kiosk root element is required.")
   }
 
-  const categories = options.categories ?? kioskCategories
-  const initialCategoryId = categories[0]?.id
-
-  if (!initialCategoryId) {
-    throw new Error("At least one kiosk category is required.")
-  }
-
-  const speechRuntime = resolveSpeechRuntime(root, options)
-  let narrationToken = 0
+  const storage = options.storage ?? root.ownerDocument?.defaultView?.localStorage ?? null
+  const createAudio = resolveAudioFactory(options)
+  const loadAppConfig =
+    options.loadAppConfig ??
+    (() =>
+      fetchShowroomAppConfig({
+        endpoint: options.appConfigEndpoint,
+        fetchImpl: options.fetchImpl
+      }))
+  const loadProductDetail =
+    options.loadProductDetail ??
+    ((productId) =>
+      fetchShowroomProductDetail({
+        productId,
+        fetchImpl: options.fetchImpl
+      }))
 
   const swipeState = {
     active: false,
@@ -485,175 +582,298 @@ export const createMedicalKioskApp = (root, options = {}) => {
   }
 
   const state = {
-    activeCategoryId: initialCategoryId,
-    activeProductId: null,
+    loadState: "loading",
+    errorMessage: "",
+    config: null,
+    language: readPersistedLanguage(storage),
+    activeHallSlot: 0,
+    activeCategoryId: "home",
+    screen: "home",
+    selectedProductId: null,
+    productDetailLoadState: "idle",
+    productDetailErrorMessage: "",
+    productDetailData: null,
     isMuted: false,
-    isSpeaking: false,
-    speechStatus: "idle"
+    playbackStatus: "idle",
+    playbackErrorMessage: "",
+    playbackMessage: getUiCopy(readPersistedLanguage(storage)).voiceIdle,
+    audioSource: "",
+    activeAudio: null
   }
 
-  const getActiveCategory = () => categories.find((category) => category.id === state.activeCategoryId) ?? categories[0]
+  const destroyAudio = () => {
+    if (!state.activeAudio) {
+      return
+    }
 
-  const getActiveProduct = () => getActiveCategory().products.find((product) => product.id === state.activeProductId) ?? null
+    if (typeof state.activeAudio.pause === "function") {
+      state.activeAudio.pause()
+    }
 
-  const getActiveIndex = () => categories.findIndex((category) => category.id === state.activeCategoryId)
+    if ("currentTime" in state.activeAudio) {
+      state.activeAudio.currentTime = 0
+    }
+
+    state.activeAudio = null
+  }
+
+  const resetPlaybackState = () => {
+    state.playbackStatus = "idle"
+    state.playbackErrorMessage = ""
+  }
+
+
+  const getActiveHall = () => {
+    if (!state.config || state.activeHallSlot === 0) {
+      return null
+    }
+
+    return state.config.showrooms[state.activeHallSlot - 1] ?? null
+  }
+
+  const getSelectedProduct = () => getActiveHall()?.products.find((item) => item.id === state.selectedProductId) ?? null
+
+  const resolveAudioSource = () => {
+    if (!state.config) {
+      return ""
+    }
+
+    if (state.screen === "product") {
+      const product = getSelectedProduct()
+      return product ? getProductAudioSrc(product, state.language) : ""
+    }
+
+    if (state.screen === "home" || state.screen === "company") {
+      return getCompanyAudioSrc(state.config.company, state.language)
+    }
+
+    return ""
+  }
+
+  const updateDerivedState = () => {
+    const hall = getActiveHall()
+    state.activeCategoryId = getActiveCategoryId(hall)
+    state.audioSource = resolveAudioSource()
+
+    const copy = getUiCopy(state.language)
+
+    if (state.audioSource === "") {
+      state.playbackMessage = copy.voiceUnavailable
+      return
+    }
+
+    if (state.playbackStatus === "playing") {
+      state.playbackMessage = copy.voicePlaying
+      return
+    }
+
+    if (state.playbackStatus === "paused") {
+      state.playbackMessage = copy.voicePaused
+      return
+    }
+
+    if (state.playbackStatus === "failed") {
+      state.playbackMessage = `${copy.voiceFailedPrefix}${state.playbackErrorMessage}`
+      return
+    }
+
+    state.playbackMessage = copy.voiceIdle
+  }
 
   const render = () => {
-    root.innerHTML = createMarkup(categories, state)
+    updateDerivedState()
+    root.innerHTML = createAppMarkup(state)
   }
 
-  const invalidateNarration = () => {
-    narrationToken += 1
-    return narrationToken
-  }
+  const ensureAudio = () => {
+    const desiredSrc = resolveAudioSource()
 
-  const cancelSpeech = () => {
-    if (speechRuntime.supported && typeof speechRuntime.synthesis.cancel === "function") {
-      speechRuntime.synthesis.cancel()
-    }
-  }
-
-  const resetNarration = () => {
-    invalidateNarration()
-    cancelSpeech()
-    state.isSpeaking = false
-    state.speechStatus = "idle"
-  }
-
-  const switchToTextOnlyNarration = () => {
-    invalidateNarration()
-    cancelSpeech()
-    state.isSpeaking = true
-    state.speechStatus = "idle"
-  }
-
-  const speakActiveTranscript = () => {
-    const activeProduct = getActiveProduct()
-    if (!activeProduct) {
-      return false
+    if (!desiredSrc) {
+      throw new Error("KIOSK_AUDIO_UNAVAILABLE: no backend audio source is available for the current screen.")
     }
 
-    if (!speechRuntime.supported) {
-      state.isSpeaking = false
-      state.speechStatus = "unsupported"
-      return false
-    }
-
-    const token = invalidateNarration()
-    const utterance = new speechRuntime.Utterance(buildProductTranscript(getActiveCategory(), activeProduct).join(" "))
-    utterance.lang = "zh-CN"
-    utterance.rate = 1
-    utterance.pitch = 1
-    utterance.onend = () => {
-      if (token !== narrationToken) {
-        return
+    if (state.activeAudio?.src === desiredSrc) {
+      if ("muted" in state.activeAudio) {
+        state.activeAudio.muted = state.isMuted
       }
-
-      state.isSpeaking = false
-      state.speechStatus = "idle"
-      render()
-    }
-    utterance.onerror = () => {
-      if (token !== narrationToken) {
-        return
-      }
-
-      state.isSpeaking = false
-      state.speechStatus = "unsupported"
-      render()
+      return state.activeAudio
     }
 
-    cancelSpeech()
-    state.isSpeaking = true
-    state.speechStatus = "idle"
-    speechRuntime.synthesis.speak(utterance)
-    return true
+    destroyAudio()
+    const audio = createAudio(desiredSrc)
+
+    if (!audio || typeof audio.play !== "function" || typeof audio.pause !== "function") {
+      throw new Error("Kiosk audio controller is required.")
+    }
+
+    if ("src" in audio && !audio.src) {
+      audio.src = desiredSrc
+    }
+
+    if ("muted" in audio) {
+      audio.muted = state.isMuted
+    }
+
+    state.activeAudio = audio
+    return audio
   }
 
-  const shiftCategory = (delta) => {
-    resetNarration()
-    const nextIndex = getWrappedIndex(getActiveIndex(), delta, categories.length)
-    state.activeCategoryId = categories[nextIndex].id
-    state.activeProductId = null
+  const stopPlayback = (nextStatus = "paused") => {
+    destroyAudio()
+    state.playbackStatus = nextStatus
+    state.playbackErrorMessage = ""
     render()
   }
 
-  const openProductDetail = (productId) => {
-    const product = getActiveCategory().products.find((item) => item.id === productId)
+  const playAudio = async () => {
+    try {
+      const audio = ensureAudio()
+      await audio.play()
+      state.playbackStatus = "playing"
+      state.playbackErrorMessage = ""
+      render()
+    } catch (error) {
+      state.playbackStatus = "failed"
+      state.playbackErrorMessage = error instanceof Error ? error.message : "unknown error."
+      render()
+    }
+  }
+
+  const resetInteractiveState = () => {
+    destroyAudio()
+    resetPlaybackState()
+    state.selectedProductId = null
+    state.productDetailLoadState = "idle"
+    state.productDetailErrorMessage = ""
+    state.productDetailData = null
+  }
+
+  const load = async () => {
+    destroyAudio()
+    state.loadState = "loading"
+    state.errorMessage = ""
+    state.activeHallSlot = 0
+    state.screen = "home"
+    resetInteractiveState()
+    render()
+
+    try {
+      state.config = await loadAppConfig()
+      state.loadState = "ready"
+      render()
+    } catch (error) {
+      state.loadState = "error"
+      state.errorMessage = error instanceof Error ? error.message : "SHOWROOM_APP_CONFIG_UNAVAILABLE: unknown error."
+      render()
+    }
+  }
+
+  const shiftCategory = (delta) => {
+    if (state.loadState !== "ready" || !state.config) {
+      return
+    }
+
+    const totalSlots = state.config.showrooms.length + 1
+    state.activeHallSlot = (state.activeHallSlot + delta + totalSlots) % totalSlots
+    state.screen = state.activeHallSlot === 0 ? "home" : "gallery"
+    resetInteractiveState()
+    render()
+  }
+
+  const openCompanyDetail = () => {
+    if (state.loadState !== "ready" || !state.config) {
+      return
+    }
+
+    destroyAudio()
+    resetPlaybackState()
+    state.screen = "company"
+    render()
+  }
+
+  const openProductDetail = async (productId) => {
+    if (state.loadState !== "ready" || !state.config) {
+      return
+    }
+
+    const hall = getActiveHall()
+    const product = hall?.products.find((item) => item.id === productId)
+
     if (!product) {
       return
     }
 
-    resetNarration()
-    state.activeProductId = product.id
+    destroyAudio()
+    resetPlaybackState()
+    state.screen = "product"
+    state.selectedProductId = product.id
+    state.productDetailLoadState = "loading"
+    state.productDetailErrorMessage = ""
+    state.productDetailData = null
+    render()
+
+    try {
+      state.productDetailData = await loadProductDetail(product.id)
+      state.productDetailLoadState = "ready"
+      render()
+    } catch (error) {
+      state.productDetailLoadState = "error"
+      state.productDetailErrorMessage =
+        error instanceof Error ? error.message : "SHOWROOM_PRODUCT_DETAIL_UNAVAILABLE: unknown error."
+      render()
+    }
+  }
+
+  const backToGallery = () => {
+    if (state.loadState !== "ready") {
+      return
+    }
+
+    destroyAudio()
+    resetPlaybackState()
+    state.screen = state.activeHallSlot === 0 ? "home" : "gallery"
+    state.selectedProductId = null
+    state.productDetailLoadState = "idle"
+    state.productDetailErrorMessage = ""
+    state.productDetailData = null
     render()
   }
 
-  const toggleNarration = () => {
-    const activeProduct = getActiveProduct()
-
-    if (!activeProduct) {
+  const togglePlayback = async () => {
+    if (state.audioSource === "") {
       return
     }
 
-    if (state.isSpeaking) {
-      resetNarration()
-      render()
+    if (state.playbackStatus === "playing") {
+      stopPlayback("paused")
       return
     }
 
-    if (state.isMuted) {
-      state.speechStatus = "idle"
-      state.isSpeaking = true
-      invalidateNarration()
-      render()
-      return
-    }
-
-    if (!speakActiveTranscript()) {
-      render()
-      return
-    }
-
-    render()
+    await playAudio()
   }
 
-  const muteNarration = () => {
-    if (state.isMuted) {
-      return
-    }
+  const toggleMute = () => {
+    state.isMuted = !state.isMuted
 
-    state.isMuted = true
-
-    if (state.isSpeaking) {
-      switchToTextOnlyNarration()
-    }
-
-    render()
-  }
-
-  const unmuteNarration = () => {
-    if (!state.isMuted) {
-      return
-    }
-
-    state.isMuted = false
-
-    if (state.isSpeaking && !speakActiveTranscript()) {
-      render()
-      return
+    if (state.activeAudio && "muted" in state.activeAudio) {
+      state.activeAudio.muted = state.isMuted
     }
 
     render()
   }
 
-  const toggleMuteNarration = () => {
-    if (state.isMuted) {
-      unmuteNarration()
+  const switchLanguage = (nextLanguage) => {
+    const resolvedLanguage = resolveLanguage(nextLanguage)
+
+    if (resolvedLanguage === state.language) {
       return
     }
 
-    muteNarration()
+    destroyAudio()
+    resetPlaybackState()
+    state.language = resolvedLanguage
+    persistLanguage(storage, resolvedLanguage)
+    render()
   }
 
   const completeSwipe = (endX, endY) => {
@@ -745,44 +965,68 @@ export const createMedicalKioskApp = (root, options = {}) => {
       return
     }
 
-    const shiftButton = findClosestActionTarget(event, "[data-shift-category]")
-    if (shiftButton instanceof HTMLElement) {
-      const delta = Number(shiftButton.dataset.shiftCategory)
+    const target = event.target instanceof Element ? event.target : null
 
-      if (!Number.isNaN(delta) && delta !== 0) {
-        shiftCategory(delta)
-      }
+    if (!target) {
       return
     }
 
-    const card = findClosestActionTarget(event, "[data-product-id]")
-    if (card instanceof HTMLElement) {
-      openProductDetail(card.dataset.productId)
+    const languageButton = target.closest("[data-language-option]")
+    if (languageButton instanceof HTMLElement) {
+      switchLanguage(languageButton.dataset.languageOption)
       return
     }
 
-    if (findClosestActionTarget(event, "[data-speech-toggle]")) {
-      toggleNarration()
+
+    if (target.closest("[data-retry-load]")) {
+      void load()
       return
     }
 
-    if (findClosestActionTarget(event, "[data-speech-mute-toggle]")) {
-      toggleMuteNarration()
+    if (target.closest("[data-shift-category='-1']")) {
+      shiftCategory(-1)
       return
     }
 
-    if (findClosestActionTarget(event, "[data-back-to-gallery]")) {
-      resetNarration()
-      state.activeProductId = null
-      render()
+    if (target.closest("[data-shift-category='1']")) {
+      shiftCategory(1)
+      return
+    }
+
+    if (target.closest("[data-home-company-entry-card]")) {
+      openCompanyDetail()
+      return
+    }
+
+    if (target.closest("[data-company-back]")) {
+      backToGallery()
+      return
+    }
+
+    const productCard = target.closest("[data-product-id]")
+    if (productCard instanceof HTMLElement && productCard.dataset.productId) {
+      void openProductDetail(productCard.dataset.productId)
+      return
+    }
+
+    if (target.closest("[data-back-to-gallery]")) {
+      backToGallery()
+      return
+    }
+
+    if (target.closest("[data-speech-toggle]")) {
+      void togglePlayback()
+      return
+    }
+
+    if (target.closest("[data-speech-mute-toggle]")) {
+      toggleMute()
     }
   })
 
-  render()
+  void load()
 
   return {
-    getActiveCategoryId: () => state.activeCategoryId,
-    nextCategory: () => shiftCategory(1),
-    previousCategory: () => shiftCategory(-1)
+    reload: load
   }
 }
