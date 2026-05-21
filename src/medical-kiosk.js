@@ -35,6 +35,8 @@ const KIOSK_COPY = {
     voiceTitle: "公开讲解",
     voiceMuteLabel: "静音",
     voiceUnmuteLabel: "开声",
+    voiceExpandLabel: "展开讲解",
+    voiceCollapseLabel: "收起讲解",
     voicePlayLabel: "播放讲解",
     voicePauseLabel: "暂停讲解",
     voiceIdle: "点击播放语音讲解",
@@ -73,6 +75,8 @@ const KIOSK_COPY = {
     voiceTitle: "Public narration",
     voiceMuteLabel: "Mute audio",
     voiceUnmuteLabel: "Unmute audio",
+    voiceExpandLabel: "Expand narration",
+    voiceCollapseLabel: "Collapse narration",
     voicePlayLabel: "Play narration",
     voicePauseLabel: "Pause narration",
     voiceIdle: "Press to play narration",
@@ -136,6 +140,12 @@ const splitParagraphs = (text) => {
 const createWaveMarkup = (isActive) => `
   <div class="kiosk-voice__wave" data-wave-active="${isActive ? "true" : "false"}" aria-hidden="true">
     <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+`
+
+const createVoicePreviewMarkup = (lines) => `
+  <div class="kiosk-voice__preview" data-voice-preview>
+    <p>${lines[0] ?? ""}</p>
   </div>
 `
 
@@ -392,9 +402,15 @@ const createProductDetailMarkup = (hall, product, state) => {
 
 const createVoicePanelMarkup = (state, lines, hasAudio) => {
   const copy = getUiCopy(state.language)
+  const isExpanded = state.isVoicePanelExpanded
 
   return `
-    <aside class="kiosk-voice" data-active-category-id="${state.activeCategoryId}">
+    <aside
+      class="kiosk-voice"
+      data-active-category-id="${state.activeCategoryId}"
+      data-voice-panel
+      data-voice-panel-expanded="${isExpanded ? "true" : "false"}"
+    >
       <div class="kiosk-voice__header">
         <h2 class="kiosk-voice__title">${copy.voiceTitle}</h2>
         <div class="kiosk-voice__header-tools">
@@ -415,9 +431,20 @@ const createVoicePanelMarkup = (state, lines, hasAudio) => {
               `
               : ""
           }
+          <button
+            class="kiosk-voice__panel-toggle"
+            type="button"
+            data-voice-panel-toggle
+            aria-expanded="${isExpanded ? "true" : "false"}"
+            aria-label="${isExpanded ? copy.voiceCollapseLabel : copy.voiceExpandLabel}"
+            title="${isExpanded ? copy.voiceCollapseLabel : copy.voiceExpandLabel}"
+          >
+            ${isExpanded ? copy.voiceCollapseLabel : copy.voiceExpandLabel}
+          </button>
           ${hasAudio ? createWaveMarkup(state.playbackStatus === "playing" && !state.isMuted) : ""}
         </div>
       </div>
+      ${createVoicePreviewMarkup(lines)}
       <div class="kiosk-voice__copy" data-voice-copy>
         ${lines.map((line) => `<p>${line}</p>`).join("")}
       </div>
@@ -616,6 +643,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     productDetailErrorMessage: "",
     productDetailData: null,
     isMuted: false,
+    isVoicePanelExpanded: false,
     playbackStatus: "idle",
     playbackErrorMessage: "",
     playbackMessage: getUiCopy(readPersistedLanguage(storage)).voiceIdle,
@@ -705,6 +733,69 @@ export const createMedicalKioskApp = (root, options = {}) => {
   const render = () => {
     updateDerivedState()
     root.innerHTML = createAppMarkup(state)
+  }
+
+  const getCurrentScrollTarget = () => {
+    const view = root.ownerDocument?.defaultView ?? null
+    const scrollingElement = root.ownerDocument?.scrollingElement ?? root.ownerDocument?.documentElement ?? null
+    const candidates = [
+      "[data-product-detail-id]",
+      "[data-product-detail-loading]",
+      "[data-product-detail-error]",
+      "[data-company-detail-panel]",
+      "[data-gallery-scroll-region]"
+    ]
+
+    if (!view || !scrollingElement) {
+      return {
+        kind: "document",
+        selector: null,
+        top: scrollingElement?.scrollTop ?? 0
+      }
+    }
+
+    for (const selector of candidates) {
+      const candidate = root.querySelector(selector)
+
+      if (!(candidate instanceof HTMLElement)) {
+        continue
+      }
+
+      const overflowY = view.getComputedStyle(candidate).overflowY
+      if (overflowY === "auto" || overflowY === "scroll") {
+        return {
+          kind: "element",
+          selector,
+          top: candidate.scrollTop
+        }
+      }
+    }
+
+    return {
+      kind: "document",
+      selector: null,
+      top: scrollingElement.scrollTop
+    }
+  }
+
+  const rerenderPreservingBrowseScroll = () => {
+    const snapshot = getCurrentScrollTarget()
+    render()
+
+    if (snapshot.kind === "element" && typeof snapshot.selector === "string") {
+      const nextTarget = root.querySelector(snapshot.selector)
+
+      if (nextTarget instanceof HTMLElement) {
+        nextTarget.scrollTop = snapshot.top
+        return
+      }
+    }
+
+    const scrollingElement = root.ownerDocument?.scrollingElement ?? root.ownerDocument?.documentElement ?? null
+
+    if (scrollingElement instanceof HTMLElement) {
+      scrollingElement.scrollTop = snapshot.top
+    }
   }
 
   const getBrowseScrollTarget = () => {
@@ -841,6 +932,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     state.errorMessage = ""
     state.activeHallSlot = 0
     state.screen = "home"
+    state.isVoicePanelExpanded = false
     resetInteractiveState()
     render()
 
@@ -863,6 +955,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     const totalSlots = state.config.showrooms.length + 1
     state.activeHallSlot = (state.activeHallSlot + delta + totalSlots) % totalSlots
     state.screen = state.activeHallSlot === 0 ? "home" : "gallery"
+    state.isVoicePanelExpanded = false
     resetInteractiveState()
     render()
   }
@@ -872,6 +965,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
       return
     }
 
+    state.isVoicePanelExpanded = false
     saveBrowseScrollPosition()
     destroyAudio()
     resetPlaybackState()
@@ -892,6 +986,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
       return
     }
 
+    state.isVoicePanelExpanded = false
     saveBrowseScrollPosition()
     destroyAudio()
     resetPlaybackState()
@@ -922,6 +1017,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     destroyAudio()
     resetPlaybackState()
     state.screen = state.activeHallSlot === 0 ? "home" : "gallery"
+    state.isVoicePanelExpanded = false
     state.selectedProductId = null
     state.productDetailLoadState = "idle"
     state.productDetailErrorMessage = ""
@@ -951,6 +1047,11 @@ export const createMedicalKioskApp = (root, options = {}) => {
     }
 
     render()
+  }
+
+  const toggleVoicePanel = () => {
+    state.isVoicePanelExpanded = !state.isVoicePanelExpanded
+    rerenderPreservingBrowseScroll()
   }
 
   const switchLanguage = (nextLanguage) => {
@@ -1112,6 +1213,11 @@ export const createMedicalKioskApp = (root, options = {}) => {
 
     if (target.closest("[data-speech-mute-toggle]")) {
       toggleMute()
+      return
+    }
+
+    if (target.closest("[data-voice-panel-toggle]")) {
+      toggleVoicePanel()
     }
   })
 

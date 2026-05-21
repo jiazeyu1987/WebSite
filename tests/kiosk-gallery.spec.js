@@ -95,6 +95,9 @@ test("gallery arrows switch showrooms and the card region scrolls internally", a
   await expect(page.locator("[data-mode-option]")).toHaveCount(0)
   await expect(page.locator(".kiosk-header [data-language-toggle-button]")).toHaveCount(0)
   await expect(page.locator(".kiosk-voice__header [data-language-toggle-button]")).toHaveCount(1)
+  await expect(page.locator("[data-voice-panel-toggle]")).toBeHidden()
+  await expect(page.locator("[data-voice-copy]")).toBeVisible()
+  await expect(page.locator("[data-voice-preview]")).toBeHidden()
 
   await page.locator('[data-shift-category="1"]').click()
   await expect(swipeHeader).toHaveAttribute("data-active-category-id", "cardiology")
@@ -176,6 +179,41 @@ test("mobile title strip shows swipe guidance and slot progress", async ({ page 
   await expect(page.locator("[data-swipe-header]")).toHaveAttribute("data-active-category-id", "cardiology")
   await expect(swipeProgress).toHaveAttribute("data-current-slot", "2")
   await expect(swipeProgress).toHaveAttribute("data-total-slots", "3")
+})
+
+test("mobile portrait voice panel starts compact and can expand on demand", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload({ cardiologyProducts: 1 })
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/")
+
+  const voicePanel = page.locator("[data-voice-panel]")
+  const voiceToggle = page.locator("[data-voice-panel-toggle]")
+  const voicePreview = page.locator("[data-voice-preview]")
+  const voiceCopy = page.locator("[data-voice-copy]")
+
+  await expect(voicePanel).toHaveAttribute("data-voice-panel-expanded", "false")
+  await expect(voiceToggle).toBeVisible()
+  await expect(voiceToggle).toContainText("展开讲解")
+  await expect(voicePreview).toBeVisible()
+  await expect(voiceCopy).toBeHidden()
+
+  await voiceToggle.click()
+
+  await expect(voicePanel).toHaveAttribute("data-voice-panel-expanded", "true")
+  await expect(voiceToggle).toContainText("收起讲解")
+  await expect(voicePreview).toBeHidden()
+  await expect(voiceCopy).toBeVisible()
 })
 
 test("returning from product detail restores the desktop gallery internal scroll position", async ({ page }) => {

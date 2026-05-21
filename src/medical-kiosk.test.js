@@ -224,6 +224,32 @@ describe("createMedicalKioskApp", () => {
     expect(audioFactory.controllers[0].play).toHaveBeenCalledTimes(1)
   })
 
+  it("renders a compact voice panel state that can expand and collapse on demand", async () => {
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig())
+    })
+    await flush()
+
+    const voicePanel = root.querySelector("[data-voice-panel]")
+    const voiceToggle = root.querySelector("[data-voice-panel-toggle]")
+    const voicePreview = root.querySelector("[data-voice-preview]")
+
+    expect(voicePanel?.getAttribute("data-voice-panel-expanded")).toBe("false")
+    expect(voiceToggle?.textContent).toContain("\u5c55\u5f00\u8bb2\u89e3")
+    expect(voiceToggle?.getAttribute("aria-expanded")).toBe("false")
+    expect(voicePreview?.textContent).toContain("Company narration in Chinese")
+
+    voiceToggle?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    expect(root.querySelector("[data-voice-panel]")?.getAttribute("data-voice-panel-expanded")).toBe("true")
+    expect(root.querySelector("[data-voice-panel-toggle]")?.textContent).toContain("\u6536\u8d77\u8bb2\u89e3")
+    expect(root.querySelector("[data-voice-panel-toggle]")?.getAttribute("aria-expanded")).toBe("true")
+
+    root.querySelector("[data-voice-panel-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    expect(root.querySelector("[data-voice-panel]")?.getAttribute("data-voice-panel-expanded")).toBe("false")
+  })
+
   it("restores the gallery scroll position after returning from product detail", async () => {
     const originalGetComputedStyle = window.getComputedStyle.bind(window)
     const getComputedStyleSpy = vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
