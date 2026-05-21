@@ -601,6 +601,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     startY: 0,
     suppressClick: false
   }
+  const browseScrollPositions = new Map()
 
   const state = {
     loadState: "loading",
@@ -706,6 +707,71 @@ export const createMedicalKioskApp = (root, options = {}) => {
     root.innerHTML = createAppMarkup(state)
   }
 
+  const getBrowseScrollTarget = () => {
+    const view = root.ownerDocument?.defaultView ?? null
+    const gallery = root.querySelector("[data-gallery-scroll-region]")
+    const scrollingElement = root.ownerDocument?.scrollingElement ?? root.ownerDocument?.documentElement ?? null
+
+    if (!view || !(gallery instanceof HTMLElement) || !scrollingElement) {
+      return {
+        kind: "document",
+        target: scrollingElement,
+        top: scrollingElement?.scrollTop ?? 0
+      }
+    }
+
+    const overflowY = view.getComputedStyle(gallery).overflowY
+    if (overflowY === "auto" || overflowY === "scroll") {
+      return {
+        kind: "element",
+        target: gallery,
+        top: gallery.scrollTop
+      }
+    }
+
+    return {
+      kind: "document",
+      target: scrollingElement,
+      top: scrollingElement.scrollTop
+    }
+  }
+
+  const saveBrowseScrollPosition = () => {
+    if (state.loadState !== "ready" || (state.screen !== "home" && state.screen !== "gallery")) {
+      return
+    }
+
+    const { top } = getBrowseScrollTarget()
+    browseScrollPositions.set(state.activeCategoryId, top)
+  }
+
+  const restoreBrowseScrollPosition = () => {
+    if (state.loadState !== "ready" || (state.screen !== "home" && state.screen !== "gallery")) {
+      return
+    }
+
+    const savedTop = browseScrollPositions.get(state.activeCategoryId)
+    if (typeof savedTop !== "number") {
+      return
+    }
+
+    const view = root.ownerDocument?.defaultView ?? null
+    const { kind, target } = getBrowseScrollTarget()
+
+    if (kind === "element" && target instanceof HTMLElement) {
+      target.scrollTop = savedTop
+      return
+    }
+
+    if (target instanceof HTMLElement) {
+      target.scrollTop = savedTop
+    }
+
+    if (view && typeof view.scrollTo === "function") {
+      view.scrollTo(0, savedTop)
+    }
+  }
+
   const ensureAudio = () => {
     const desiredSrc = resolveAudioSource()
 
@@ -806,10 +872,12 @@ export const createMedicalKioskApp = (root, options = {}) => {
       return
     }
 
+    saveBrowseScrollPosition()
     destroyAudio()
     resetPlaybackState()
     state.screen = "company"
     render()
+    restoreBrowseScrollPosition()
   }
 
   const openProductDetail = async (productId) => {
@@ -824,6 +892,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
       return
     }
 
+    saveBrowseScrollPosition()
     destroyAudio()
     resetPlaybackState()
     state.screen = "product"
@@ -858,6 +927,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     state.productDetailErrorMessage = ""
     state.productDetailData = null
     render()
+    restoreBrowseScrollPosition()
   }
 
   const togglePlayback = async () => {

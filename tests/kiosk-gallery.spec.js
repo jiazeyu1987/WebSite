@@ -51,6 +51,19 @@ const createApiPayload = ({ cardiologyProducts = 36 } = {}) => ({
   ]
 })
 
+const createProductDetailPayload = (productId = 101) => ({
+  productCard: {
+    id: productId,
+    nameCn: `Guidewire System CN ${productId}`,
+    nameEn: `Guidewire System ${productId}`,
+    previewImageUrl: `https://cdn.example.com/product-${productId}.png`
+  },
+  publicProductFields: [
+    { label: "Target market", value: "Cardiology" },
+    { label: "Registration", value: "Cert-A" }
+  ]
+})
+
 test("gallery arrows switch showrooms and the card region scrolls internally", async ({ page }) => {
   await page.route("**/showroom/display/app-config", async (route) => {
     await route.fulfill({
@@ -163,6 +176,105 @@ test("mobile title strip shows swipe guidance and slot progress", async ({ page 
   await expect(page.locator("[data-swipe-header]")).toHaveAttribute("data-active-category-id", "cardiology")
   await expect(swipeProgress).toHaveAttribute("data-current-slot", "2")
   await expect(swipeProgress).toHaveAttribute("data-total-slots", "3")
+})
+
+test("returning from product detail restores the desktop gallery internal scroll position", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload()
+      })
+    })
+  })
+
+  await page.route("**/showroom/display/product/*", async (route) => {
+    const productId = Number(route.request().url().split("/").pop())
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createProductDetailPayload(productId)
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 1920, height: 911 })
+  await page.goto("/")
+
+  await page.locator('[data-shift-category="1"]').click()
+
+  const gallery = page.locator("[data-gallery-scroll-region]")
+  const targetCard = page.locator("[data-product-card]").nth(20)
+  const beforeScrollTop = await gallery.evaluate((node) => {
+    node.scrollTop = 420
+    return node.scrollTop
+  })
+
+  await targetCard.scrollIntoViewIfNeeded()
+  await targetCard.click()
+  await expect(page.locator("[data-product-detail-id]")).toBeVisible()
+
+  await page.locator("[data-back-to-gallery]").click()
+
+  await expect(page.locator("[data-product-card]").nth(20)).toBeVisible()
+  await expect.poll(() => gallery.evaluate((node) => node.scrollTop)).toBe(beforeScrollTop)
+  await expect.poll(() => page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)).toBe(0)
+})
+
+test("returning from product detail restores the mobile document scroll position", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload()
+      })
+    })
+  })
+
+  await page.route("**/showroom/display/product/*", async (route) => {
+    const productId = Number(route.request().url().split("/").pop())
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createProductDetailPayload(productId)
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/")
+
+  await page.locator('[data-shift-category="1"]').click()
+
+  const targetCard = page.locator("[data-product-card]").nth(20)
+  await targetCard.scrollIntoViewIfNeeded()
+  const beforeScrollTop = await page.evaluate(() => {
+    const scrollingElement = document.scrollingElement
+    return scrollingElement?.scrollTop ?? 0
+  })
+
+  await targetCard.click()
+  await expect(page.locator("[data-product-detail-id]")).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, 0))
+
+  await page.locator("[data-back-to-gallery]").click()
+
+  await expect(page.locator("[data-product-card]").nth(20)).toBeVisible()
+  await expect.poll(() => page.evaluate(() => document.scrollingElement?.scrollTop ?? 0)).toBe(beforeScrollTop)
 })
 
 test("clicking the home hero opens company detail loaded from IntRuoyi and returns back home", async ({ page }) => {

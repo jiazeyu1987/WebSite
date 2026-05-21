@@ -224,6 +224,69 @@ describe("createMedicalKioskApp", () => {
     expect(audioFactory.controllers[0].play).toHaveBeenCalledTimes(1)
   })
 
+  it("restores the gallery scroll position after returning from product detail", async () => {
+    const originalGetComputedStyle = window.getComputedStyle.bind(window)
+    const getComputedStyleSpy = vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
+      if (element instanceof Element && element.hasAttribute("data-gallery-scroll-region")) {
+        return { overflowY: "auto" }
+      }
+
+      return originalGetComputedStyle(element)
+    })
+
+    const loadProductDetail = vi.fn((productId) => Promise.resolve(createMappedProductDetail(productId)))
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig()),
+      loadProductDetail
+    })
+    await flush()
+
+    root.querySelector('[data-shift-category="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    const gallery = root.querySelector("[data-gallery-scroll-region]")
+    gallery.scrollTop = 180
+
+    root.querySelector("[data-product-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
+    await flush()
+
+    root.querySelector("[data-back-to-gallery]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    expect(root.querySelector("[data-gallery-scroll-region]")?.scrollTop).toBe(180)
+    getComputedStyleSpy.mockRestore()
+  })
+
+  it("restores the home browse position after returning from company detail", async () => {
+    const originalGetComputedStyle = window.getComputedStyle.bind(window)
+    const scrollingElement = document.scrollingElement ?? document.documentElement
+    const getComputedStyleSpy = vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
+      if (element instanceof Element && element.hasAttribute("data-gallery-scroll-region")) {
+        return { overflowY: "visible" }
+      }
+
+      return originalGetComputedStyle(element)
+    })
+    const scrollToSpy = vi.spyOn(window, "scrollTo").mockImplementation((x, y) => {
+      scrollingElement.scrollLeft = Number(x)
+      scrollingElement.scrollTop = Number(y)
+    })
+
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig())
+    })
+    await flush()
+
+    scrollingElement.scrollTop = 240
+
+    root.querySelector("[data-home-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    scrollingElement.scrollTop = 0
+
+    root.querySelector("[data-company-back]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    expect(scrollingElement.scrollTop).toBe(240)
+    getComputedStyleSpy.mockRestore()
+    scrollToSpy.mockRestore()
+  })
+
   it("shows an explicit error when the initial app-config load fails", async () => {
     const root = mountApp({
       loadAppConfig: vi.fn().mockRejectedValue(new Error("SHOWROOM_APP_CONFIG_UNAVAILABLE: request failed with 503."))
