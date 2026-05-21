@@ -312,6 +312,14 @@
     padding: 18px;
   }
 
+  .showroom-header__text {
+    gap: 8px;
+  }
+
+  .showroom-header__topbar {
+    gap: 12px;
+  }
+
   .showroom-detail__body,
   .showroom-detail__media {
     padding: 14px;
@@ -396,6 +404,24 @@
   }
 
   .showroom-language-toggle {
-    width: fit-content;
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .showroom-language-toggle__button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .showroom-landing {
+    justify-content: stretch;
+  }
+
+  .showroom-company-card {
+    width: 100%;
+  }
+
+  .showroom-company-card__image {
+    aspect-ratio: 4 / 3;
   }
 }

@@ -115,6 +115,37 @@ test("keeps the kiosk homepage on root and renders the bilingual showroom compan
   await expect(page.locator("[data-company-entry-card]")).toContainText("Yingtai Medical")
 })
 
+test("mobile showroom landing uses wide controls for language switch and company entry", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload()
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/showroom")
+
+  const geometry = await page.evaluate(() => {
+    const toggle = document.querySelector("[data-language-toggle]")
+    const card = document.querySelector("[data-company-entry-card]")
+
+    return {
+      viewportWidth: window.innerWidth,
+      toggleWidth: toggle?.getBoundingClientRect().width ?? 0,
+      cardWidth: card?.getBoundingClientRect().width ?? 0
+    }
+  })
+
+  expect(geometry.toggleWidth).toBeGreaterThanOrEqual(280)
+  expect(geometry.cardWidth).toBeGreaterThanOrEqual(280)
+})
+
 test("mobile showroom detail keeps image title and play action in the first screen", async ({ page }) => {
   await page.route("**/showroom/display/app-config", async (route) => {
     await route.fulfill({
