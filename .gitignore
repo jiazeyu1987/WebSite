@@ -4,3 +4,7 @@ output/
 coverage/
 .vite/
 *.log
+.codex/
+test-results/
+__pycache__/
+*.pyc
