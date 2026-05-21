@@ -15,6 +15,8 @@
   min-height: 100dvh;
   padding: 24px;
   color: var(--showroom-text);
+  overflow-x: hidden;
+  touch-action: pan-y;
   background:
     radial-gradient(circle at top left, rgba(140, 190, 255, 0.22), transparent 30%),
     linear-gradient(180deg, #f9fbff 0%, var(--showroom-bg) 100%);

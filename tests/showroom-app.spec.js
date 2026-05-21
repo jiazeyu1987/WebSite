@@ -146,6 +146,40 @@ test("mobile showroom landing uses wide controls for language switch and company
   expect(geometry.cardWidth).toBeGreaterThanOrEqual(280)
 })
 
+test("mobile showroom stays in a vertical-scroll-only layout without horizontal overflow", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload()
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/showroom")
+
+  const metrics = await page.evaluate(() => {
+    const showroomRoot = document.querySelector("[data-showroom-app]")
+    const scrollingElement = document.scrollingElement
+    const styles = showroomRoot ? getComputedStyle(showroomRoot) : null
+
+    return {
+      scrollWidth: scrollingElement?.scrollWidth ?? 0,
+      clientWidth: scrollingElement?.clientWidth ?? 0,
+      overflowX: styles?.overflowX ?? "",
+      touchAction: styles?.touchAction ?? ""
+    }
+  })
+
+  expect(metrics.scrollWidth).toBe(metrics.clientWidth)
+  expect(metrics.overflowX).toBe("hidden")
+  expect(metrics.touchAction).toBe("pan-y")
+})
+
 test("mobile showroom detail keeps image title and play action in the first screen", async ({ page }) => {
   await page.route("**/showroom/display/app-config", async (route) => {
     await route.fulfill({
