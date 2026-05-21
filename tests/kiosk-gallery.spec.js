@@ -181,6 +181,95 @@ test("mobile title strip shows swipe guidance and slot progress", async ({ page 
   await expect(swipeProgress).toHaveAttribute("data-total-slots", "3")
 })
 
+test("mobile pointer swipe shows drag feedback, ignores vertical drags, and clears on cancel", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload({ cardiologyProducts: 1 })
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/")
+
+  const swipeHeader = page.locator("[data-swipe-header]")
+
+  await swipeHeader.evaluate((node) => {
+    const rect = node.getBoundingClientRect()
+    node.dispatchEvent(new PointerEvent("pointerdown", {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: rect.right - 20,
+      clientY: rect.top + rect.height / 2
+    }))
+    node.dispatchEvent(new PointerEvent("pointermove", {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: rect.right - 88,
+      clientY: rect.top + rect.height / 2 + 4
+    }))
+  })
+
+  await expect(swipeHeader).toHaveAttribute("data-swipe-dragging", "true")
+  await expect(swipeHeader).toHaveAttribute("data-swipe-axis", "x")
+
+  await swipeHeader.evaluate((node) => {
+    const rect = node.getBoundingClientRect()
+    node.dispatchEvent(new PointerEvent("pointercancel", {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: rect.right - 88,
+      clientY: rect.top + rect.height / 2 + 4
+    }))
+  })
+
+  await expect(swipeHeader).toHaveAttribute("data-swipe-dragging", "false")
+  await expect(swipeHeader).toHaveAttribute("data-swipe-axis", "idle")
+  await expect(swipeHeader).toHaveAttribute("data-active-category-id", "home")
+
+  await swipeHeader.evaluate((node) => {
+    const rect = node.getBoundingClientRect()
+    node.dispatchEvent(new PointerEvent("pointerdown", {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 2,
+      pointerType: "touch",
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + 12
+    }))
+    node.dispatchEvent(new PointerEvent("pointermove", {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 2,
+      pointerType: "touch",
+      clientX: rect.left + rect.width / 2 + 8,
+      clientY: rect.bottom - 12
+    }))
+    node.dispatchEvent(new PointerEvent("pointerup", {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 2,
+      pointerType: "touch",
+      clientX: rect.left + rect.width / 2 + 8,
+      clientY: rect.bottom - 12
+    }))
+  })
+
+  await expect(swipeHeader).toHaveAttribute("data-active-category-id", "home")
+  await expect(swipeHeader).toHaveAttribute("data-swipe-axis", "idle")
+})
+
 test("mobile portrait voice panel starts compact and can expand on demand", async ({ page }) => {
   await page.route("**/showroom/display/app-config", async (route) => {
     await route.fulfill({

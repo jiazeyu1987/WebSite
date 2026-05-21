@@ -108,10 +108,17 @@ body::before {
   justify-items: center;
   gap: 8px;
   min-width: 0;
+  transform: translate3d(var(--kiosk-swipe-shift, 0px), 0, 0);
+  transition: transform 180ms ease;
+  will-change: transform;
 }
 
 .kiosk-title-strip:active {
   cursor: grabbing;
+}
+
+.kiosk-title-strip[data-swipe-dragging="true"] .kiosk-title-strip__center {
+  transition: none;
 }
 
 .kiosk-title-strip__title {

@@ -119,6 +119,26 @@ const flush = async () => {
   await Promise.resolve()
 }
 
+const createPointerGestureEvent = (type, init = {}) => {
+  const EventCtor = window.PointerEvent ?? window.MouseEvent
+  const event = new EventCtor(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: init.clientX ?? 0,
+    clientY: init.clientY ?? 0
+  })
+
+  if (!("pointerId" in event)) {
+    Object.defineProperty(event, "pointerId", { configurable: true, value: init.pointerId ?? 1 })
+  }
+
+  if (!("pointerType" in event)) {
+    Object.defineProperty(event, "pointerType", { configurable: true, value: init.pointerType ?? "touch" })
+  }
+
+  return event
+}
+
 const mountApp = (options = {}) => {
   document.body.innerHTML = '<div id="app"></div>'
   const root = document.getElementById("app")
@@ -159,6 +179,46 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-swipe-progress]")?.getAttribute("data-total-slots")).toBe("3")
     expect(root.querySelectorAll("[data-product-card]")).toHaveLength(1)
     expect(root.querySelector("[data-product-card]")?.getAttribute("aria-label")).toContain("Guidewire System CN")
+  })
+
+  it("shows drag feedback during a horizontal pointer swipe and clears it on cancel", async () => {
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig())
+    })
+    await flush()
+
+    const swipeHeader = root.querySelector("[data-swipe-header]")
+
+    swipeHeader?.dispatchEvent(createPointerGestureEvent("pointerdown", { clientX: 300, clientY: 120 }))
+    swipeHeader?.dispatchEvent(createPointerGestureEvent("pointermove", { clientX: 232, clientY: 124 }))
+
+    expect(root.querySelector("[data-swipe-header]")?.getAttribute("data-swipe-dragging")).toBe("true")
+    expect(root.querySelector("[data-swipe-header]")?.getAttribute("data-swipe-axis")).toBe("x")
+    expect(root.querySelector("[data-swipe-header]")?.style.getPropertyValue("--kiosk-swipe-shift")).not.toBe("0px")
+
+    swipeHeader?.dispatchEvent(createPointerGestureEvent("pointercancel", { clientX: 232, clientY: 124 }))
+
+    expect(root.querySelector("[data-swipe-header]")?.getAttribute("data-swipe-dragging")).toBe("false")
+    expect(root.querySelector("[data-swipe-header]")?.getAttribute("data-swipe-axis")).toBe("idle")
+    expect(root.querySelector("[data-swipe-header]")?.style.getPropertyValue("--kiosk-swipe-shift")).toBe("0px")
+    expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("home")
+  })
+
+  it("does not switch halls for a predominantly vertical pointer drag", async () => {
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig())
+    })
+    await flush()
+
+    const swipeHeader = root.querySelector("[data-swipe-header]")
+
+    swipeHeader?.dispatchEvent(createPointerGestureEvent("pointerdown", { clientX: 180, clientY: 100 }))
+    swipeHeader?.dispatchEvent(createPointerGestureEvent("pointermove", { clientX: 188, clientY: 184 }))
+    swipeHeader?.dispatchEvent(createPointerGestureEvent("pointerup", { clientX: 188, clientY: 184 }))
+
+    expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("home")
+    expect(root.querySelector("[data-swipe-header]")?.getAttribute("data-swipe-dragging")).toBe("false")
+    expect(root.querySelector("[data-swipe-header]")?.getAttribute("data-swipe-axis")).toBe("idle")
   })
 
   it("opens company detail from backend config and plays the backend company audio in English", async () => {

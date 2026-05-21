@@ -532,6 +532,9 @@ const createReadyMarkup = (state) => {
           class="kiosk-title-strip"
           data-swipe-header
           data-active-category-id="${state.activeCategoryId}"
+          data-swipe-dragging="false"
+          data-swipe-axis="idle"
+          style="--kiosk-swipe-shift: 0px;"
           tabindex="0"
           role="group"
           aria-label="${copy.swipeHeaderAria}"
@@ -624,9 +627,14 @@ export const createMedicalKioskApp = (root, options = {}) => {
 
   const swipeState = {
     active: false,
+    pointerId: null,
+    pointerType: "",
+    surface: null,
+    axis: "idle",
     startX: 0,
     startY: 0,
-    suppressClick: false
+    suppressClick: false,
+    dragOffset: 0
   }
   const browseScrollPositions = new Map()
 
@@ -1068,6 +1076,45 @@ export const createMedicalKioskApp = (root, options = {}) => {
     render()
   }
 
+  const applySwipeFeedback = (surface, { dragging = false, axis = "idle", shiftPx = 0 } = {}) => {
+    if (!(surface instanceof HTMLElement)) {
+      return
+    }
+
+    surface.setAttribute("data-swipe-dragging", dragging ? "true" : "false")
+    surface.setAttribute("data-swipe-axis", axis)
+    surface.style.setProperty("--kiosk-swipe-shift", `${Math.round(shiftPx)}px`)
+  }
+
+  const resetSwipeState = ({ preserveSuppressClick = false, releaseCapture = true } = {}) => {
+    if (swipeState.surface instanceof HTMLElement) {
+      applySwipeFeedback(swipeState.surface, { dragging: false, axis: "idle", shiftPx: 0 })
+
+      if (
+        releaseCapture &&
+        swipeState.pointerId !== null &&
+        typeof swipeState.surface.hasPointerCapture === "function" &&
+        swipeState.surface.hasPointerCapture(swipeState.pointerId) &&
+        typeof swipeState.surface.releasePointerCapture === "function"
+      ) {
+        swipeState.surface.releasePointerCapture(swipeState.pointerId)
+      }
+    }
+
+    swipeState.active = false
+    swipeState.pointerId = null
+    swipeState.pointerType = ""
+    swipeState.surface = null
+    swipeState.axis = "idle"
+    swipeState.startX = 0
+    swipeState.startY = 0
+    swipeState.dragOffset = 0
+
+    if (!preserveSuppressClick) {
+      swipeState.suppressClick = false
+    }
+  }
+
   const completeSwipe = (endX, endY) => {
     if (!swipeState.active) {
       return
@@ -1076,63 +1123,99 @@ export const createMedicalKioskApp = (root, options = {}) => {
     const deltaX = endX - swipeState.startX
     const deltaY = endY - swipeState.startY
 
-    swipeState.active = false
-    swipeState.suppressClick = false
-
-    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+    if (swipeState.axis !== "x" || Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      resetSwipeState()
       return
     }
 
+    resetSwipeState({ preserveSuppressClick: true })
     swipeState.suppressClick = true
     shiftCategory(deltaX < 0 ? 1 : -1)
   }
 
-  root.addEventListener("mousedown", (event) => {
+  root.addEventListener("pointerdown", (event) => {
     const swipeSurface = event.target instanceof Element ? event.target.closest("[data-swipe-header]") : null
 
-    if (!swipeSurface) {
+    if (!(swipeSurface instanceof HTMLElement)) {
+      return
+    }
+
+    if (event.target instanceof Element && event.target.closest("[data-shift-category]")) {
+      return
+    }
+
+    if (event.pointerType === "mouse" && event.button !== 0) {
       return
     }
 
     swipeState.active = true
+    swipeState.pointerId = event.pointerId
+    swipeState.pointerType = event.pointerType
+    swipeState.surface = swipeSurface
+    swipeState.axis = "idle"
     swipeState.suppressClick = false
     swipeState.startX = event.clientX
     swipeState.startY = event.clientY
+
+    if (typeof swipeSurface.setPointerCapture === "function") {
+      swipeSurface.setPointerCapture(event.pointerId)
+    }
   })
 
-  root.addEventListener("mouseup", (event) => {
+  root.addEventListener("pointermove", (event) => {
+    if (!swipeState.active || swipeState.pointerId !== event.pointerId || !(swipeState.surface instanceof HTMLElement)) {
+      return
+    }
+
+    const deltaX = event.clientX - swipeState.startX
+    const deltaY = event.clientY - swipeState.startY
+    const absoluteX = Math.abs(deltaX)
+    const absoluteY = Math.abs(deltaY)
+
+    if (swipeState.axis === "idle") {
+      if (absoluteX < 12 && absoluteY < 12) {
+        return
+      }
+
+      swipeState.axis = absoluteX > absoluteY ? "x" : "y"
+    }
+
+    if (swipeState.axis !== "x") {
+      applySwipeFeedback(swipeState.surface, { dragging: false, axis: swipeState.axis, shiftPx: 0 })
+      return
+    }
+
+    swipeState.dragOffset = Math.max(-96, Math.min(96, deltaX))
+
+    if (absoluteX > 8) {
+      swipeState.suppressClick = true
+    }
+
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault()
+    }
+
+    applySwipeFeedback(swipeState.surface, {
+      dragging: true,
+      axis: "x",
+      shiftPx: swipeState.dragOffset
+    })
+  })
+
+  root.addEventListener("pointerup", (event) => {
+    if (!swipeState.active || swipeState.pointerId !== event.pointerId) {
+      return
+    }
+
     completeSwipe(event.clientX, event.clientY)
   })
 
-  root.addEventListener("mouseleave", () => {
-    swipeState.active = false
-    swipeState.suppressClick = false
-  })
-
-  root.addEventListener("touchstart", (event) => {
-    const swipeSurface = event.target instanceof Element ? event.target.closest("[data-swipe-header]") : null
-    const firstTouch = event.touches[0]
-
-    if (!swipeSurface || !firstTouch) {
+  root.addEventListener("pointercancel", (event) => {
+    if (!swipeState.active || swipeState.pointerId !== event.pointerId) {
       return
     }
 
-    swipeState.active = true
-    swipeState.suppressClick = false
-    swipeState.startX = firstTouch.clientX
-    swipeState.startY = firstTouch.clientY
-  })
-
-  root.addEventListener("touchend", (event) => {
-    const firstTouch = event.changedTouches[0]
-
-    if (!firstTouch) {
-      swipeState.active = false
-      swipeState.suppressClick = false
-      return
-    }
-
-    completeSwipe(firstTouch.clientX, firstTouch.clientY)
+    resetSwipeState()
   })
 
   root.addEventListener("keydown", (event) => {
