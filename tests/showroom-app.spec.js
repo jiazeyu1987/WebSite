@@ -135,7 +135,7 @@ test("mobile showroom detail keeps image title and play action in the first scre
 
   const detailImage = page.locator(".showroom-detail__image")
   const detailTitle = page.locator("[data-company-detail-title]")
-  const playButton = page.locator("[data-company-play]")
+  const playButton = page.locator("[data-company-mobile-play]")
   const fields = page.locator("[data-company-fields]")
 
   await expect(detailImage).toBeInViewport()
@@ -145,7 +145,7 @@ test("mobile showroom detail keeps image title and play action in the first scre
   const layout = await page.evaluate(() => {
     const image = document.querySelector(".showroom-detail__image")
     const title = document.querySelector("[data-company-detail-title]")
-    const play = document.querySelector("[data-company-play]")
+    const play = document.querySelector("[data-company-mobile-play]")
     const fields = document.querySelector("[data-company-fields]")
 
     return {
@@ -158,7 +158,7 @@ test("mobile showroom detail keeps image title and play action in the first scre
 
   expect(layout.titleTop).toBeGreaterThan(layout.imageBottom)
   expect(layout.playTop).toBeGreaterThanOrEqual(layout.titleTop)
-  expect(layout.fieldsTop).toBeGreaterThan(layout.playTop)
+  expect(layout.fieldsTop).toBeGreaterThan(layout.titleTop)
 })
 
 test("mobile showroom detail keeps the action bar visible while scrolling fields", async ({ page }) => {
@@ -179,13 +179,52 @@ test("mobile showroom detail keeps the action bar visible while scrolling fields
 
   await page.locator("[data-company-entry-card]").click()
 
-  const actionBar = page.locator("[data-company-detail-action-bar]")
+  const actionBar = page.locator("[data-company-mobile-action-bar]")
 
   await expect(actionBar).toBeVisible()
   await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight))
   await expect(actionBar).toBeInViewport()
   await expect(actionBar).toContainText("返回首页")
   await expect(actionBar).toContainText("播放讲解")
+})
+
+test("mobile showroom detail keeps the action bar in the lower thumb zone", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload()
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/showroom")
+
+  await page.locator("[data-company-entry-card]").click()
+
+  const actionBar = page.locator("[data-company-mobile-action-bar]")
+
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight))
+  await expect(actionBar).toBeInViewport()
+
+  const metrics = await actionBar.evaluate((node) => {
+    const rect = node.getBoundingClientRect()
+    return {
+      top: rect.top,
+      bottom: rect.bottom,
+      viewportHeight: window.innerHeight
+    }
+  })
+
+  const bottomOffset = metrics.viewportHeight - metrics.bottom
+
+  expect(metrics.top).toBeGreaterThan(metrics.viewportHeight / 2)
+  expect(bottomOffset).toBeGreaterThanOrEqual(8)
+  expect(bottomOffset).toBeLessThanOrEqual(80)
 })
 
 test("mobile showroom detail presents public fields as separated cards", async ({ page }) => {

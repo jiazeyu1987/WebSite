@@ -223,6 +223,20 @@ const createDetailMarkup = (company, state) => {
   `
 }
 
+const createMobileActionBarMarkup = (state) => {
+  const copy = getShowroomCopy(state.language)
+
+  return `
+    <div class="showroom-mobile-action-bar" data-company-mobile-action-bar>
+      <button class="showroom-back" type="button" data-company-mobile-back>${copy.backLabel}</button>
+      <button class="showroom-play" type="button" data-company-mobile-play>
+        ${state.playbackStatus === "playing" ? copy.pauseLabel : copy.playLabel}
+      </button>
+      <p class="showroom-play-state" data-company-mobile-play-state>${getPlaybackMessage(state)}</p>
+    </div>
+  `
+}
+
 const createReadyMarkup = (config, state) => {
   const copy = getShowroomCopy(state.language)
   const companyName = getCompanyName(config.company, state.language)
@@ -242,6 +256,7 @@ const createReadyMarkup = (config, state) => {
         </div>
       </header>
       ${state.screen === "detail" ? createDetailMarkup(config.company, state) : createLandingMarkup(config.company, state.language)}
+      ${state.screen === "detail" ? createMobileActionBarMarkup(state) : ""}
     </div>
   `
 }
@@ -475,7 +490,17 @@ export const createShowroomConsumerApp = (root, options = {}) => {
       return
     }
 
+    if (target.closest("[data-company-mobile-back]")) {
+      returnToLanding()
+      return
+    }
+
     if (target.closest("[data-company-play]")) {
+      void toggleCompanyAudio()
+      return
+    }
+
+    if (target.closest("[data-company-mobile-play]")) {
       void toggleCompanyAudio()
     }
   })
