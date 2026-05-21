@@ -184,12 +184,16 @@ const createDetailMarkup = (company, state) => {
         <div class="showroom-detail__body">
           <section class="showroom-detail__summary" data-company-detail-summary>
             <header class="showroom-detail__header">
-              <button class="showroom-back" type="button" data-company-back>${copy.backLabel}</button>
               <p class="showroom-eyebrow">${copy.detailEyebrow}</p>
               <h2 data-company-detail-title>${companyName}</h2>
             </header>
 
-            <div class="showroom-detail__actions" data-company-detail-actions>
+            <div
+              class="showroom-detail__actions showroom-detail__action-bar"
+              data-company-detail-actions
+              data-company-detail-action-bar
+            >
+              <button class="showroom-back" type="button" data-company-back>${copy.backLabel}</button>
               <button class="showroom-play" type="button" data-company-play>
                 ${state.playbackStatus === "playing" ? copy.pauseLabel : copy.playLabel}
               </button>

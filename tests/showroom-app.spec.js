@@ -161,6 +161,33 @@ test("mobile showroom detail keeps image title and play action in the first scre
   expect(layout.fieldsTop).toBeGreaterThan(layout.playTop)
 })
 
+test("mobile showroom detail keeps the action bar visible while scrolling fields", async ({ page }) => {
+  await page.route("**/showroom/display/app-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload()
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/showroom")
+
+  await page.locator("[data-company-entry-card]").click()
+
+  const actionBar = page.locator("[data-company-detail-action-bar]")
+
+  await expect(actionBar).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight))
+  await expect(actionBar).toBeInViewport()
+  await expect(actionBar).toContainText("返回首页")
+  await expect(actionBar).toContainText("播放讲解")
+})
+
 test("fails fast on /showroom when company.publicFields is missing from the backend contract", async ({ page }) => {
   await page.route("**/showroom/display/app-config", async (route) => {
     const payload = createApiPayload()

@@ -174,6 +174,24 @@ describe("createShowroomConsumerApp", () => {
     expect(actions?.compareDocumentPosition(fields) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it("renders a dedicated detail action bar that groups back and play actions", async () => {
+    const root = mountApp({
+      loadAppConfig: vi.fn().mockResolvedValue(createApiPayload()),
+      createAudio: vi.fn(() => createAudioController())
+    })
+    await flush()
+
+    root.querySelector("[data-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    const actionBar = root.querySelector("[data-company-detail-action-bar]")
+    const fields = root.querySelector("[data-company-fields]")
+
+    expect(actionBar).not.toBeNull()
+    expect(actionBar?.textContent).toContain("返回首页")
+    expect(actionBar?.textContent).toContain("播放讲解")
+    expect(actionBar?.compareDocumentPosition(fields) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it("shows an explicit error state when company.publicFields is missing", async () => {
     const root = document.getElementById("app")
     const payload = createApiPayload()
