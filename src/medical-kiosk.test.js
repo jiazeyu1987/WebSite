@@ -15,6 +15,7 @@ class MockSpeechSynthesisUtterance {
 }
 
 const openFirstProductDetail = (root) => {
+  root.querySelector('[data-shift-category="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
   root.querySelector("[data-product-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 }
 
@@ -57,8 +58,6 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelectorAll("[data-tab-id]")).toHaveLength(0)
     expect(root.querySelectorAll("[data-active-category-title]")).toHaveLength(1)
     expect(root.querySelector("[data-active-category-title]")?.textContent).toContain(kioskCategories[0].title)
-    expect(root.querySelectorAll("[data-product-card]")).toHaveLength(kioskCategories[0].products.length)
-
     const swipeHeader = root.querySelector("[data-swipe-header]")
 
     swipeHeader?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 220, clientY: 24 }))
@@ -73,11 +72,11 @@ describe("createMedicalKioskApp", () => {
     const root = mountApp()
 
     expect(root.querySelector("[data-gallery-scroll-region]")).not.toBeNull()
-
     root.querySelector('[data-shift-category="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
     expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("cardiology")
     expect(root.querySelector("[data-active-category-title]")?.textContent).toContain(kioskCategories[1].title)
+    expect(root.querySelectorAll("[data-product-card]")).toHaveLength(kioskCategories[1].products.length)
 
     root.querySelector('[data-shift-category="-1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
@@ -94,32 +93,35 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-product-detail-title]")?.textContent).toContain("导入鞘套组")
     expect(root.querySelector("[data-product-specs-panel]")).toBeNull()
     expect(root.querySelectorAll("[data-product-spec-item]")).toHaveLength(0)
+    expect(root.querySelector("[data-active-category-id]")?.getAttribute("data-active-category-id")).toBe("cardiology")
 
     root.querySelector("[data-back-to-gallery]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
     expect(root.querySelector("[data-product-detail-id]")).toBeNull()
-    expect(root.querySelectorAll("[data-product-card]")).toHaveLength(kioskCategories[0].products.length)
+    expect(root.querySelectorAll("[data-product-card]")).toHaveLength(kioskCategories[1].products.length)
   })
 
-  it("renders the detail composition without the bottom spec-card section", () => {
+  it("renders one audio toggle in the right voice header and removes the old detail mute controls", () => {
     const root = mountApp()
 
     openFirstProductDetail(root)
 
+    const voiceHeader = root.querySelector(".kiosk-voice__header")
+    const audioToggle = root.querySelector("[data-speech-mute-toggle]")
+
     expect(root.querySelector("[data-back-to-gallery]")?.textContent).toContain("返回展厅")
-    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("语音讲解")
-    expect(root.querySelector("[data-product-detail-title]")?.textContent).toContain("导入鞘套组")
     expect(root.querySelector("[data-product-hero-art]")).not.toBeNull()
     expect(root.querySelector("[data-product-description-panel]")).not.toBeNull()
     expect(root.querySelector("[data-product-description-title]")?.textContent).toContain("产品描述")
     expect(root.querySelectorAll("[data-product-description-line]")).toHaveLength(3)
     expect(root.querySelectorAll("[data-product-tag]")).toHaveLength(3)
-    expect(root.querySelector("[data-speech-toggle]")).not.toBeNull()
-    expect(root.querySelector("[data-speech-mute]")).not.toBeNull()
-    expect(root.querySelector("[data-speech-unmute]")).not.toBeNull()
-    expect(root.querySelector("[data-muted-state]")?.textContent).toContain("已开声")
-    expect(root.querySelector("[data-product-specs-panel]")).toBeNull()
-    expect(root.querySelectorAll("[data-product-spec-item]")).toHaveLength(0)
+    expect(audioToggle).not.toBeNull()
+    expect(voiceHeader?.contains(audioToggle)).toBe(true)
+    expect(audioToggle?.getAttribute("data-audio-state")).toBe("unmuted")
+    expect(audioToggle?.getAttribute("aria-label")).toBe("静音")
+    expect(root.querySelector("[data-speech-mute]")).toBeNull()
+    expect(root.querySelector("[data-speech-unmute]")).toBeNull()
+    expect(root.querySelector("[data-muted-state]")).toBeNull()
   })
 
   it("plays and stops narration through the detail-page speech action", () => {
@@ -140,16 +142,33 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("播放讲解")
   })
 
+  it("toggles from green speaker mute action to red muted speaker action", () => {
+    const root = mountApp()
+
+    openFirstProductDetail(root)
+    const audioToggle = root.querySelector("[data-speech-mute-toggle]")
+
+    expect(audioToggle?.getAttribute("data-audio-state")).toBe("unmuted")
+    expect(audioToggle?.getAttribute("aria-label")).toBe("静音")
+
+    audioToggle?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    const mutedToggle = root.querySelector("[data-speech-mute-toggle]")
+    expect(mutedToggle?.getAttribute("data-audio-state")).toBe("muted")
+    expect(mutedToggle?.getAttribute("aria-label")).toBe("开声")
+    expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("已静音")
+  })
+
   it("enters narration mode without speaking when playback starts while muted", () => {
     const speechRuntime = createSpeechRuntime()
     const root = mountApp(speechRuntime)
 
     openFirstProductDetail(root)
-    root.querySelector("[data-speech-mute]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
     expect(speechRuntime.speechSynthesis.speakCalled).toBe(0)
-    expect(root.querySelector("[data-muted-state]")?.textContent).toContain("已静音")
+    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("muted")
     expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("已静音，仅显示文字")
     expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("停止讲解")
   })
@@ -162,11 +181,11 @@ describe("createMedicalKioskApp", () => {
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     const cancelCallsAfterPlay = speechRuntime.speechSynthesis.cancelCalled
 
-    root.querySelector("[data-speech-mute]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
     expect(speechRuntime.speechSynthesis.speakCalled).toBe(1)
     expect(speechRuntime.speechSynthesis.cancelCalled).toBe(cancelCallsAfterPlay + 1)
-    expect(root.querySelector("[data-muted-state]")?.textContent).toContain("已静音")
+    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("muted")
     expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("已静音，仅显示文字")
     expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("停止讲解")
   })
@@ -176,12 +195,12 @@ describe("createMedicalKioskApp", () => {
     const root = mountApp(speechRuntime)
 
     openFirstProductDetail(root)
-    root.querySelector("[data-speech-mute]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    root.querySelector("[data-speech-unmute]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
     expect(speechRuntime.speechSynthesis.speakCalled).toBe(1)
-    expect(root.querySelector("[data-muted-state]")?.textContent).toContain("已开声")
+    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("unmuted")
     expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("正在播放语音讲解")
     expect(speechRuntime.getSpokenUtterance()?.text).toContain("导入鞘套组")
   })
@@ -191,7 +210,7 @@ describe("createMedicalKioskApp", () => {
     const root = mountApp(speechRuntime)
 
     openFirstProductDetail(root)
-    root.querySelector("[data-speech-mute]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     root.querySelector("[data-back-to-gallery]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
@@ -199,7 +218,7 @@ describe("createMedicalKioskApp", () => {
 
     root.querySelectorAll("[data-product-card]")[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
-    expect(root.querySelector("[data-muted-state]")?.textContent).toContain("已静音")
+    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("muted")
     expect(root.querySelector("[data-speaking-state]")?.textContent).toContain("已静音，点击播放语音讲解")
     expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("播放讲解")
 

@@ -189,6 +189,36 @@ const createCardsMarkup = (products) =>
     )
     .join("")
 
+const createCompanyLogoMarkup = () => `
+  <svg class="kiosk-company-logo" viewBox="0 0 420 180" aria-hidden="true" role="img">
+    <defs>
+      <linearGradient id="kiosk-logo-mark" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${palette.sky}" />
+        <stop offset="55%" stop-color="${palette.blue}" />
+        <stop offset="100%" stop-color="${palette.green}" />
+      </linearGradient>
+    </defs>
+    <rect x="22" y="22" width="376" height="136" rx="32" fill="rgba(255,255,255,0.92)" />
+    <g transform="translate(56 42)">
+      <rect x="0" y="0" width="88" height="88" rx="24" fill="rgba(28,95,212,0.08)" />
+      <path d="M24 58c8-18 22-30 42-36 8-2 16-3 22-2-5 20-15 36-32 48-12 8-24 12-38 14 2-8 4-16 6-24Z" fill="url(#kiosk-logo-mark)" />
+      <circle cx="72" cy="26" r="5" fill="${palette.gold}" />
+    </g>
+    <text x="168" y="78" fill="${palette.blue}" font-size="30" font-weight="700" letter-spacing="6">盈泰医疗</text>
+    <text x="170" y="108" fill="${palette.silver}" font-size="18" font-weight="600" letter-spacing="2">YINGTAI MEDICAL</text>
+  </svg>
+`
+
+const createHomeLogoCardMarkup = () => `
+  <section class="kiosk-gallery kiosk-gallery--home-logo" data-gallery-scroll-region aria-label="首页公司 Logo 卡片区">
+    <div class="kiosk-gallery__single-card">
+      <article class="kiosk-home-logo-card" data-company-logo-card aria-label="盈泰医疗公司 Logo">
+        ${createCompanyLogoMarkup()}
+      </article>
+    </div>
+  </section>
+`
+
 const artKindLabels = {
   sheath: "导入鞘",
   loop: "环形导丝",
@@ -218,25 +248,54 @@ const buildProductTranscript = (category, product) => [
 
 const buildProductTags = (category, product) => [category.title, `${getArtKindLabel(product.art.kind)}示意图`, "图文讲解联动"]
 
-const createWaveMarkup = (className = "kiosk-voice__wave") => `
-  <div class="${className}" aria-hidden="true">
+const isAudibleNarration = (state) => state.isSpeaking && !state.isMuted && state.speechStatus !== "unsupported"
+
+const createWaveMarkup = (className = "kiosk-voice__wave", isActive = true) => `
+  <div class="${className}" data-wave-active="${isActive ? "true" : "false"}" aria-hidden="true">
     <span></span><span></span><span></span><span></span><span></span><span></span>
   </div>
 `
 
-const createVoiceMarkup = (category) => `
+const createVoiceToggleIcon = (state) =>
+  state.isMuted
+    ? `
+        <svg class="kiosk-voice__toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M5 10.5h3.4L13 7v10l-4.6-3.5H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+          <path d="M16 9 20 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          <path d="M20 9 16 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      `
+    : `
+        <svg class="kiosk-voice__toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M5 10.5h3.4L13 7v10l-4.6-3.5H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+          <path d="M16 10.2a3 3 0 0 1 0 3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          <path d="M18.7 8a6 6 0 0 1 0 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      `
+
+const createVoiceMarkup = (category, state) => `
   <aside class="kiosk-voice" data-active-category-id="${category.id}">
     <div class="kiosk-voice__header">
       <h2 class="kiosk-voice__title">${category.voiceTitle}</h2>
-      ${createWaveMarkup()}
+      <div class="kiosk-voice__header-tools">
+        <button
+          class="kiosk-voice__toggle${state.isMuted ? " is-muted" : " is-unmuted"}"
+          type="button"
+          data-speech-mute-toggle
+          data-audio-state="${state.isMuted ? "muted" : "unmuted"}"
+          aria-label="${state.isMuted ? "开声" : "静音"}"
+          title="${state.isMuted ? "开声" : "静音"}"
+        >
+          ${createVoiceToggleIcon(state)}
+        </button>
+        ${createWaveMarkup("kiosk-voice__wave", isAudibleNarration(state))}
+      </div>
     </div>
     <div class="kiosk-voice__copy" data-voice-copy>
       ${category.voiceCopy.map((paragraph) => `<p>${paragraph}</p>`).join("")}
     </div>
   </aside>
 `
-
-const getMutedStateCopy = (state) => (state.isMuted ? "已静音" : "已开声")
 
 const getSpeakingStateCopy = (state) => {
   if (state.isMuted && state.isSpeaking) {
@@ -291,38 +350,15 @@ const createDetailMarkup = (category, product, state) => {
               )
               .join("")}
           </div>
-          <div class="kiosk-detail__controls">
-            <button class="kiosk-detail__speak" type="button" data-speech-toggle>
-              ${state.isSpeaking ? "停止讲解" : "播放讲解"}
-            </button>
-            <div class="kiosk-detail__audio-tools">
-              <div class="kiosk-detail__audio-buttons">
-                <button
-                  class="kiosk-detail__audio-button${state.isMuted ? " is-active" : ""}"
-                  type="button"
-                  data-speech-mute
-                  aria-pressed="${state.isMuted ? "true" : "false"}"
-                >
-                  静音
-                </button>
-                <button
-                  class="kiosk-detail__audio-button${state.isMuted ? "" : " is-active"}"
-                  type="button"
-                  data-speech-unmute
-                  aria-pressed="${state.isMuted ? "false" : "true"}"
-                >
-                  开声
-                </button>
-              </div>
-              <p class="kiosk-detail__mute-state" data-muted-state>${getMutedStateCopy(state)}</p>
-            </div>
-          </div>
+          <button class="kiosk-detail__speak" type="button" data-speech-toggle>
+            ${state.isSpeaking ? "停止讲解" : "播放讲解"}
+          </button>
         </div>
       </article>
       <section class="kiosk-detail__description" data-product-description-panel>
         <div class="kiosk-detail__description-header">
           <h3 class="kiosk-detail__description-title" data-product-description-title>产品描述</h3>
-          ${createWaveMarkup("kiosk-voice__wave kiosk-detail__wave")}
+          ${createWaveMarkup("kiosk-voice__wave kiosk-detail__wave", isAudibleNarration(state))}
         </div>
         <div class="kiosk-detail__description-copy">
           ${transcript
@@ -337,6 +373,7 @@ const createDetailMarkup = (category, product, state) => {
 const createMarkup = (categories, state) => {
   const activeCategory = categories.find((category) => category.id === state.activeCategoryId) ?? categories[0]
   const activeProduct = activeCategory.products.find((product) => product.id === state.activeProductId) ?? null
+  const isHomeLogoScreen = !activeProduct && activeCategory.id === "home"
 
   return `
     <div class="kiosk-shell" data-reference-layout="medical-kiosk" data-kiosk-screen="${activeProduct ? "detail" : "gallery"}">
@@ -374,7 +411,9 @@ const createMarkup = (categories, state) => {
         ${
           activeProduct
             ? createDetailMarkup(activeCategory, activeProduct, state)
-            : `
+            : isHomeLogoScreen
+              ? createHomeLogoCardMarkup()
+              : `
               <section class="kiosk-gallery" data-gallery-scroll-region aria-label="${activeCategory.title}产品卡片区">
                 <div class="kiosk-gallery__grid">
                   ${createCardsMarkup(activeCategory.products)}
@@ -382,7 +421,7 @@ const createMarkup = (categories, state) => {
               </section>
             `
         }
-        ${createVoiceMarkup(activeCategory)}
+        ${createVoiceMarkup(activeCategory, state)}
       </main>
     </div>
   `
@@ -608,6 +647,15 @@ export const createMedicalKioskApp = (root, options = {}) => {
     render()
   }
 
+  const toggleMuteNarration = () => {
+    if (state.isMuted) {
+      unmuteNarration()
+      return
+    }
+
+    muteNarration()
+  }
+
   const completeSwipe = (endX, endY) => {
     if (!swipeState.active) {
       return
@@ -718,13 +766,8 @@ export const createMedicalKioskApp = (root, options = {}) => {
       return
     }
 
-    if (findClosestActionTarget(event, "[data-speech-mute]")) {
-      muteNarration()
-      return
-    }
-
-    if (findClosestActionTarget(event, "[data-speech-unmute]")) {
-      unmuteNarration()
+    if (findClosestActionTarget(event, "[data-speech-mute-toggle]")) {
+      toggleMuteNarration()
       return
     }
 
