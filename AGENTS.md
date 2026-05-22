@@ -42,6 +42,7 @@
 - Thread baseline: 后续所有功能、修复、重构和行为变更默认采用 BDD + 严格 TDD：先用 BDD 写清楚用户、业务或接口可观察的 `Given / When / Then` 场景，再按 TDD 执行失败测试、最小实现和回归验证；BDD 场景与 TDD 证据必须记录到 `doc/tasks/<task-id>/execution-log.md`，建议使用 `BDD: <scenario name> -> Given/When/Then`、`RED: <command> -> FAIL, <expected reason>`、`GREEN: <command> -> PASS` 标记；缺少前置条件、依赖、测试环境或测试数据时必须失败并报告，不得用 mock 成功、静默跳过、降级或 fallback 掩盖。
 - Thread baseline: 未明确说明时，e2e 测试用例必须使用真实数据，不得使用 mock 数据。
 - Thread baseline: 测试统一使用独立测试租户登录，禁止用备份数据方案代替真实测试环境。
+- Thread baseline: 默认只从 IntRuoyi 读取数据，不向 IntRuoyi 写数据，不得污染 IntRuoyi 数据库。
 
 ## Git 自动提交规范
 
