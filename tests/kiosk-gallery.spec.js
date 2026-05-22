@@ -462,7 +462,7 @@ test("clicking the home hero opens company detail loaded from IntRuoyi and retur
   await expect(page.locator("[data-home-hero-image]")).toHaveCount(1)
 })
 
-test("kiosk company detail keeps five fixed cards, uses icon playback control, and leaves empty card values blank", async ({ page }) => {
+test("reference reflow keeps company detail as left image plus playback and right-side cards", async ({ page }) => {
   await page.addInitScript(() => {
     class MockAudio {
       constructor(src = "") {
@@ -500,7 +500,8 @@ test("kiosk company detail keeps five fixed cards, uses icon playback control, a
   await page.locator("[data-home-company-entry-card]").click()
 
   await expect(page.locator("[data-company-detail-media-card]")).toBeVisible()
-  await expect(page.locator("[data-company-detail-content-card]")).toHaveCount(3)
+  await expect(page.locator("[data-company-detail-play-dock]")).toBeVisible()
+  await expect(page.locator('[data-company-detail-cards-panel="right"]')).toBeVisible()
   await expect(page.locator("[data-company-detail-field]")).toHaveCount(5)
   await expect(page.locator('[data-company-detail-field-index="0"] dt')).toContainText("Development History")
   await expect(page.locator('[data-company-detail-field-index="1"] dt')).toContainText("Park Introduction")
@@ -518,27 +519,26 @@ test("kiosk company detail keeps five fixed cards, uses icon playback control, a
 
   const layout = await page.evaluate(() => {
     const media = document.querySelector("[data-company-detail-media-card]")
-    const summary = document.querySelector('[data-company-detail-content-card="summary"]')
-    const narration = document.querySelector('[data-company-detail-content-card="narration"]')
-    const fieldsCard = document.querySelector('[data-company-detail-content-card="fields"]')
-    const fields = document.querySelector("[data-company-detail-fields]")
+    const playDock = document.querySelector("[data-company-detail-play-dock]")
+    const rightPanel = document.querySelector('[data-company-detail-cards-panel="right"]')
+    const fields = document.querySelectorAll('[data-company-detail-field-column="right"]')
     const playButton = document.querySelector("[data-company-detail-playback-button]")
     return {
+      mediaBottom: media?.getBoundingClientRect().bottom ?? 0,
       mediaRight: media?.getBoundingClientRect().right ?? 0,
-      summaryLeft: summary?.getBoundingClientRect().left ?? 0,
-      narrationTop: narration?.getBoundingClientRect().top ?? 0,
-      summaryBottom: summary?.getBoundingClientRect().bottom ?? 0,
-      fieldsCardTop: fieldsCard?.getBoundingClientRect().top ?? 0,
-      fieldsBottom: fields?.getBoundingClientRect().bottom ?? 0,
+      playDockTop: playDock?.getBoundingClientRect().top ?? 0,
+      playDockLeft: playDock?.getBoundingClientRect().left ?? 0,
+      rightPanelLeft: rightPanel?.getBoundingClientRect().left ?? 0,
+      rightFieldCount: fields.length,
       playWidth: playButton?.getBoundingClientRect().width ?? 0,
       playHeight: playButton?.getBoundingClientRect().height ?? 0
     }
   })
 
-  expect(layout.summaryLeft).toBeGreaterThan(layout.mediaRight)
-  expect(layout.narrationTop).toBeGreaterThan(layout.summaryBottom)
-  expect(layout.fieldsCardTop).toBeGreaterThan(layout.summaryBottom)
-  expect(layout.playWidth).toBeLessThan(72)
-  expect(layout.playHeight).toBeLessThan(72)
-  expect(layout.fieldsBottom).toBeGreaterThan(layout.fieldsCardTop)
+  expect(layout.playDockTop).toBeGreaterThan(layout.mediaBottom)
+  expect(layout.playDockLeft).toBeLessThan(layout.rightPanelLeft)
+  expect(layout.rightPanelLeft).toBeGreaterThan(layout.mediaRight)
+  expect(layout.rightFieldCount).toBe(5)
+  expect(layout.playWidth).toBeGreaterThan(180)
+  expect(layout.playHeight).toBeGreaterThan(40)
 })

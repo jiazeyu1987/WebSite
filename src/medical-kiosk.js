@@ -295,8 +295,13 @@ const createHomeHeroMarkup = (company, language, copy) => `
   </section>
 `
 
-const createCompanyFieldMarkup = (field, index) => `
-  <div class="kiosk-company-detail__field" data-company-detail-field data-company-detail-field-index="${index}">
+const createCompanyFieldMarkup = (field, index, column) => `
+  <div
+    class="kiosk-company-detail__field"
+    data-company-detail-field
+    data-company-detail-field-index="${index}"
+    data-company-detail-field-column="${column}"
+  >
     <dt>${field.label}</dt>
     <dd>${field.value}</dd>
   </div>
@@ -305,93 +310,71 @@ const createCompanyFieldMarkup = (field, index) => `
 const createCompanyDetailMarkup = (company, state) => {
   const copy = getUiCopy(state.language)
   const companyName = getCompanyName(company, state.language)
-  const companySubtitle = getCompanySubtitle(company, state.language)
   const visibleFields = resolveCompanyDetailFields(company, state.language)
-  const companyNarrationLines = splitParagraphs(companySubtitle)
   const playbackLabel = state.playbackStatus === "playing" ? copy.voiceStopLabel : copy.voicePlayLabel
 
   return `
     <section class="kiosk-company-detail" data-company-detail-panel>
       <header class="kiosk-detail__header kiosk-company-detail__headerbar">
         <button class="kiosk-detail__back kiosk-company-detail__back" type="button" data-company-back>${copy.companyDetailBack}</button>
+        <p class="kiosk-detail__state kiosk-company-detail__playback-hint" data-speaking-state>${state.playbackMessage}</p>
       </header>
-      <div class="kiosk-company-detail__spotlight" data-company-detail-spotlight>
-        <article class="kiosk-detail__hero kiosk-company-detail__media-card" data-company-detail-media-card>
-          <div class="kiosk-detail__hero-stage kiosk-company-detail__image-wrap">
-            <div class="kiosk-detail__hero-glow"></div>
-            <img class="kiosk-detail__hero-image kiosk-company-detail__image" src="${company.homeImage}" alt="${companyName}" />
-          </div>
-        </article>
-        <div class="kiosk-company-detail__content-stack">
-          <article
-            class="kiosk-detail__description kiosk-company-detail__content-card kiosk-company-detail__summary-card"
-            data-company-detail-content-card="summary"
-          >
-            <div class="kiosk-company-detail__summary-head">
-              <div class="kiosk-company-detail__summary-copy">
-                <p class="kiosk-detail__eyebrow">${copy.companyDetailEyebrow}</p>
-                <h2 class="kiosk-company-detail__title kiosk-detail__title" data-company-detail-title>${companyName}</h2>
-              </div>
-              <button
-                class="kiosk-icon-button kiosk-icon-button--company-playback"
-                type="button"
-                data-speech-toggle
-                data-company-detail-playback-button
-                aria-label="${playbackLabel}"
-                title="${playbackLabel}"
-              >
+      <div class="kiosk-company-detail__reference-layout" data-company-detail-reference-layout>
+        <div class="kiosk-company-detail__reference-column kiosk-company-detail__reference-column--left">
+          <article class="kiosk-detail__hero kiosk-company-detail__media-card" data-company-detail-media-card>
+            <div class="kiosk-detail__hero-stage kiosk-company-detail__image-wrap">
+              <div class="kiosk-detail__hero-glow"></div>
+              <img class="kiosk-detail__hero-image kiosk-company-detail__image" src="${company.homeImage}" alt="${companyName}" />
+            </div>
+          </article>
+          <section class="kiosk-detail__description kiosk-company-detail__play-dock" data-company-detail-play-dock>
+            <div class="kiosk-company-detail__play-dock-copy">
+              <p class="kiosk-detail__eyebrow">${copy.companyDetailEyebrow}</p>
+              <h2 class="kiosk-company-detail__title kiosk-detail__title" data-company-detail-title>${companyName}</h2>
+            </div>
+            <button
+              class="kiosk-company-detail__hero-play"
+              type="button"
+              data-speech-toggle
+              data-company-detail-playback-button
+              aria-label="${playbackLabel}"
+              title="${playbackLabel}"
+            >
+              <span class="kiosk-company-detail__hero-play-icon" aria-hidden="true">
                 ${createPlaybackIconMarkup(state.playbackStatus === "playing")}
-              </button>
-            </div>
-            <div class="kiosk-company-detail__summary-meta">
-              <p class="kiosk-detail__state kiosk-company-detail__summary-state" data-speaking-state>${state.playbackMessage}</p>
-            </div>
-          </article>
-          <article
-            class="kiosk-detail__description kiosk-company-detail__content-card kiosk-company-detail__narration-card"
-            data-company-detail-content-card="narration"
-            data-company-detail-transcript
-          >
-            <div class="kiosk-detail__description-header">
-              <h3 class="kiosk-detail__description-title">${copy.companyDetailNarrationTitle}</h3>
-            </div>
-            <div class="kiosk-detail__description-copy kiosk-company-detail__narration-copy" data-company-detail-copy>
-              ${
-                companyNarrationLines.length > 0
-                  ? companyNarrationLines.map((line) => `<p>${line}</p>`).join("")
-                  : "<p></p>"
-              }
-            </div>
-          </article>
+              </span>
+              <span class="kiosk-company-detail__hero-play-label" data-company-detail-playback-label>${playbackLabel}</span>
+            </button>
+          </section>
+        </div>
+        <div class="kiosk-company-detail__reference-column kiosk-company-detail__reference-column--right">
+          ${
+            visibleFields.length > 0
+              ? `
+                <section class="kiosk-detail__description kiosk-company-detail__cards-panel" data-company-detail-cards-panel="right">
+                  <div class="kiosk-detail__description-header">
+                    <h3 class="kiosk-detail__description-title">${copy.companyDetailCardsTitle}</h3>
+                  </div>
+                  <dl class="kiosk-company-detail__cards-stack kiosk-company-detail__cards-stack--right" data-company-detail-cards-column="right" data-company-detail-fields-panel>
+                    ${visibleFields
+                    .map((field, index) => createCompanyFieldMarkup(field, index, "right"))
+                    .join("")}
+                  </dl>
+                </section>
+              `
+              : `
+                <section
+                  class="kiosk-company-detail__empty kiosk-company-detail__cards-panel"
+                  data-company-detail-cards-panel="right"
+                  data-company-detail-empty
+                >
+                  <h3>${copy.companyDetailEmptyTitle}</h3>
+                  <p>${copy.companyDetailEmptyBody}</p>
+                </section>
+              `
+          }
         </div>
       </div>
-      ${
-        visibleFields.length > 0
-          ? `
-            <section
-              class="kiosk-detail__description kiosk-company-detail__content-card kiosk-company-detail__fields-card"
-              data-company-detail-content-card="fields"
-              data-company-detail-fields-panel
-            >
-              <div class="kiosk-detail__description-header">
-                <h3 class="kiosk-detail__description-title">${copy.companyDetailCardsTitle}</h3>
-              </div>
-              <dl class="kiosk-company-detail__fields" data-company-detail-fields>
-                ${visibleFields.map((field, index) => createCompanyFieldMarkup(field, index)).join("")}
-              </dl>
-            </section>
-          `
-          : `
-            <section
-              class="kiosk-company-detail__empty kiosk-company-detail__content-card kiosk-company-detail__fields-card"
-              data-company-detail-content-card="fields"
-              data-company-detail-empty
-            >
-              <h3>${copy.companyDetailEmptyTitle}</h3>
-              <p>${copy.companyDetailEmptyBody}</p>
-            </section>
-          `
-      }
     </section>
   `
 }
