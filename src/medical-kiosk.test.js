@@ -322,6 +322,7 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-company-detail-media-card]")).not.toBeNull()
     expect(root.querySelector("[data-company-detail-reference-layout]")).not.toBeNull()
     expect(root.querySelector("[data-company-detail-play-dock]")).not.toBeNull()
+    expect(root.querySelector("[data-company-detail-play-dock-copy]")?.hasAttribute("hidden")).toBe(true)
     expect(root.querySelector('[data-company-detail-cards-column="right"]')).not.toBeNull()
     expect(root.querySelector("[data-company-detail-title]")?.textContent).toContain("Yingtai Medical")
     expect(root.querySelector('[data-company-detail-cards-panel="right"]')).not.toBeNull()
@@ -329,7 +330,11 @@ describe("createMedicalKioskApp", () => {
     expect(root.textContent).toContain("Yingtai growth history")
     expect(root.querySelectorAll("[data-company-detail-field]")).toHaveLength(5)
     expect(root.querySelector("[data-company-detail-playback-button]")?.getAttribute("aria-label")).toBe("Play narration")
-    expect(root.querySelector("[data-company-detail-playback-button]")?.textContent).toContain("Play narration")
+    expect(root.querySelector("[data-company-detail-playback-button]")?.getAttribute("title")).toBe("Play narration")
+    expect(root.querySelector("[data-company-detail-playback-button]")?.classList.contains("runtime-playback-button")).toBe(true)
+    expect(root.querySelector("[data-company-detail-playback-label]")).toBeNull()
+    expect(root.querySelector("[data-company-detail-playback-button]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-company-detail-playback-button]")?.querySelector("[data-playback-icon]")).not.toBeNull()
     expect(root.querySelector("[data-company-detail-playback-icon]")?.getAttribute("data-icon-state")).toBe("play")
     expect(root.textContent).toContain("Park Introduction")
     expect(root.textContent).toContain("Incubation Platform")
@@ -344,8 +349,11 @@ describe("createMedicalKioskApp", () => {
     expect(audioFactory.controllers).toHaveLength(1)
     expect(audioFactory.controllers[0].src).toBe("https://cdn.example.com/company-en.mp3")
     expect(audioFactory.controllers[0].play).toHaveBeenCalledTimes(1)
-    expect(root.querySelector("[data-company-detail-playback-button]")?.getAttribute("aria-label")).toBe("Stop narration")
-    expect(root.querySelector("[data-company-detail-playback-icon]")?.getAttribute("data-icon-state")).toBe("stop")
+    expect(root.querySelector("[data-company-detail-playback-button]")?.getAttribute("aria-label")).toBe("Pause narration")
+    expect(root.querySelector("[data-company-detail-playback-button]")?.getAttribute("title")).toBe("Pause narration")
+    expect(root.querySelector("[data-company-detail-playback-label]")).toBeNull()
+    expect(root.querySelector("[data-company-detail-playback-button]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-company-detail-playback-icon]")?.getAttribute("data-icon-state")).toBe("pause")
     expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("aria-label")).toBe("Mute audio")
     expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("unmuted")
 
@@ -376,6 +384,11 @@ describe("createMedicalKioskApp", () => {
     expect(root.textContent).toContain("Cardiology")
     expect(root.textContent).toContain("Core Selling Points")
     expect(root.textContent).toContain("Smoother delivery")
+    expect(root.querySelector("[data-speech-toggle]")?.classList.contains("runtime-playback-button")).toBe(true)
+    expect(root.querySelector("[data-speech-toggle]")?.getAttribute("aria-label")).toBe("Play narration")
+    expect(root.querySelector("[data-speech-toggle]")?.getAttribute("title")).toBe("Play narration")
+    expect(root.querySelector("[data-speech-toggle]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-speech-toggle]")?.querySelector("[data-playback-icon]")?.getAttribute("data-icon-state")).toBe("play")
 
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     await flush()
@@ -383,6 +396,10 @@ describe("createMedicalKioskApp", () => {
     expect(audioFactory.controllers).toHaveLength(1)
     expect(audioFactory.controllers[0].src).toBe("https://cdn.example.com/product-101-en.mp3")
     expect(audioFactory.controllers[0].play).toHaveBeenCalledTimes(1)
+    expect(root.querySelector("[data-speech-toggle]")?.getAttribute("aria-label")).toBe("Pause narration")
+    expect(root.querySelector("[data-speech-toggle]")?.getAttribute("title")).toBe("Pause narration")
+    expect(root.querySelector("[data-speech-toggle]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-speech-toggle]")?.querySelector("[data-playback-icon]")?.getAttribute("data-icon-state")).toBe("pause")
   })
 
   it("renders a compact voice panel state that can expand and collapse on demand", async () => {
@@ -571,6 +588,61 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-company-detail-transcript]")).toBeNull()
     expect(mediaCard?.compareDocumentPosition(playDock ?? null) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(playDock?.compareDocumentPosition(rightCardsPanel ?? null) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it("preserves the company detail cards scroll position when playback rerenders the company screen", async () => {
+    const originalGetComputedStyle = window.getComputedStyle.bind(window)
+    const getComputedStyleSpy = vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
+      if (element instanceof Element && element.hasAttribute("data-company-detail-fields-panel")) {
+        return {
+          ...originalGetComputedStyle(element),
+          overflowY: "auto"
+        }
+      }
+
+      if (element instanceof Element && element.hasAttribute("data-company-detail-panel")) {
+        return {
+          ...originalGetComputedStyle(element),
+          overflowY: "hidden"
+        }
+      }
+
+      return originalGetComputedStyle(element)
+    })
+    const audioFactory = createAudioFactoryStub()
+    const config = createMappedWebsiteConfig()
+    config.company.bilingualPublicFields = config.company.bilingualPublicFields.map((field, index) => ({
+      ...field,
+      valueEn:
+        field.valueEn === ""
+          ? ""
+          : `${field.valueEn} ${Array.from(
+              { length: 28 },
+              (_, repeatIndex) => `detail-${index + 1}-${repeatIndex + 1}`
+            ).join(" ")}`
+    }))
+
+    const root = mountApp({
+      loadWebsiteConfig: vi.fn().mockResolvedValue(config),
+      createAudio: audioFactory.factory
+    })
+    await flush()
+
+    root.querySelector("[data-language-toggle-button]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-home-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
+
+    const fieldsPanel = root.querySelector("[data-company-detail-fields-panel]")
+    expect(fieldsPanel).not.toBeNull()
+
+    fieldsPanel.scrollTop = 168
+    expect(fieldsPanel.scrollTop).toBe(168)
+
+    root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
+
+    expect(root.querySelector("[data-company-detail-fields-panel]")?.scrollTop).toBe(168)
+    getComputedStyleSpy.mockRestore()
   })
 
   it("fails fast when a fixed company detail field entry is missing", async () => {

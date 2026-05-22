@@ -1,5 +1,6 @@
 import { fetchShowroomWebsiteConfig } from "./showroom-api.js"
 import { resolveCompanyDetailFields } from "./company-detail-fields.js"
+import { createRuntimePlaybackButtonMarkup } from "./runtime-playback-button.js"
 
 const KIOSK_LANGUAGE_STORAGE_KEY = "medical-kiosk-language"
 const KIOSK_LANGUAGES = new Set(["zh", "en"])
@@ -214,34 +215,6 @@ const createSpeakerIconMarkup = (isMuted) => {
   `
 }
 
-const createPlaybackIconMarkup = (isPlaying) => {
-  if (isPlaying) {
-    return `
-      <svg
-        class="kiosk-icon-button__icon kiosk-icon-button__icon--playback"
-        viewBox="0 0 48 48"
-        aria-hidden="true"
-        data-company-detail-playback-icon
-        data-icon-state="stop"
-      >
-        <rect x="15" y="15" width="18" height="18" rx="4" fill="currentColor" />
-      </svg>
-    `
-  }
-
-  return `
-    <svg
-      class="kiosk-icon-button__icon kiosk-icon-button__icon--playback"
-      viewBox="0 0 48 48"
-      aria-hidden="true"
-      data-company-detail-playback-icon
-      data-icon-state="play"
-    >
-      <path d="M18 14.5l16 9.5-16 9.5z" fill="currentColor" />
-    </svg>
-  `
-}
-
 const createLanguageToggleMarkup = (language) => {
   const copy = getUiCopy(language)
   const nextLanguage = language === "zh" ? "en" : "zh"
@@ -311,7 +284,7 @@ const createCompanyDetailMarkup = (company, state) => {
   const copy = getUiCopy(state.language)
   const companyName = getCompanyName(company, state.language)
   const visibleFields = resolveCompanyDetailFields(company, state.language)
-  const playbackLabel = state.playbackStatus === "playing" ? copy.voiceStopLabel : copy.voicePlayLabel
+  const playbackLabel = state.playbackStatus === "playing" ? copy.voicePauseLabel : copy.voicePlayLabel
 
   return `
     <section class="kiosk-company-detail" data-company-detail-panel>
@@ -328,23 +301,23 @@ const createCompanyDetailMarkup = (company, state) => {
             </div>
           </article>
           <section class="kiosk-detail__description kiosk-company-detail__play-dock" data-company-detail-play-dock>
-            <div class="kiosk-company-detail__play-dock-copy">
+            <div class="kiosk-company-detail__play-dock-copy" data-company-detail-play-dock-copy hidden>
               <p class="kiosk-detail__eyebrow">${copy.companyDetailEyebrow}</p>
               <h2 class="kiosk-company-detail__title kiosk-detail__title" data-company-detail-title>${companyName}</h2>
             </div>
-            <button
-              class="kiosk-company-detail__hero-play"
-              type="button"
-              data-speech-toggle
-              data-company-detail-playback-button
-              aria-label="${playbackLabel}"
-              title="${playbackLabel}"
-            >
-              <span class="kiosk-company-detail__hero-play-icon" aria-hidden="true">
-                ${createPlaybackIconMarkup(state.playbackStatus === "playing")}
-              </span>
-              <span class="kiosk-company-detail__hero-play-label" data-company-detail-playback-label>${playbackLabel}</span>
-            </button>
+            ${createRuntimePlaybackButtonMarkup({
+              isPlaying: state.playbackStatus === "playing",
+              label: playbackLabel,
+              className: "kiosk-company-detail__hero-play",
+              size: "hero",
+              buttonAttributes: {
+                "data-speech-toggle": true,
+                "data-company-detail-playback-button": true
+              },
+              iconAttributes: {
+                "data-company-detail-playback-icon": true
+              }
+            })}
           </section>
         </div>
         <div class="kiosk-company-detail__reference-column kiosk-company-detail__reference-column--right">
@@ -504,11 +477,15 @@ const createVoicePanelMarkup = (state, lines, hasAudio) => {
       </div>
       ${
         hasAudio && state.screen !== "company"
-          ? `
-            <button class="kiosk-detail__speak" type="button" data-speech-toggle>
-              ${state.playbackStatus === "playing" ? copy.voicePauseLabel : copy.voicePlayLabel}
-            </button>
-          `
+          ? createRuntimePlaybackButtonMarkup({
+              isPlaying: state.playbackStatus === "playing",
+              label: state.playbackStatus === "playing" ? copy.voicePauseLabel : copy.voicePlayLabel,
+              className: "kiosk-detail__speak",
+              size: "panel",
+              buttonAttributes: {
+                "data-speech-toggle": true
+              }
+            })
           : ""
       }
     </aside>
@@ -856,6 +833,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
       "[data-product-detail-id]",
       "[data-product-detail-loading]",
       "[data-product-detail-error]",
+      "[data-company-detail-fields-panel]",
       "[data-company-detail-panel]",
       "[data-gallery-scroll-region]"
     ]
@@ -1014,7 +992,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     destroyAudio()
     state.playbackStatus = nextStatus
     state.playbackErrorMessage = ""
-    render()
+    rerenderPreservingBrowseScroll()
   }
 
   const playAudio = async () => {
@@ -1023,11 +1001,11 @@ export const createMedicalKioskApp = (root, options = {}) => {
       await audio.play()
       state.playbackStatus = "playing"
       state.playbackErrorMessage = ""
-      render()
+      rerenderPreservingBrowseScroll()
     } catch (error) {
       state.playbackStatus = "failed"
       state.playbackErrorMessage = error instanceof Error ? error.message : "unknown error."
-      render()
+      rerenderPreservingBrowseScroll()
     }
   }
 
