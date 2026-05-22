@@ -312,12 +312,19 @@ describe("createMedicalKioskApp", () => {
     await flush()
 
     expect(root.querySelector("[data-company-detail-panel]")).not.toBeNull()
+    expect(root.querySelector("[data-company-detail-media-card]")).not.toBeNull()
+    expect(root.querySelectorAll("[data-company-detail-content-card]")).toHaveLength(3)
+    expect(root.querySelector('[data-company-detail-content-card="summary"]')).not.toBeNull()
+    expect(root.querySelector('[data-company-detail-content-card="narration"]')).not.toBeNull()
+    expect(root.querySelector('[data-company-detail-content-card="fields"]')).not.toBeNull()
     expect(root.querySelector("[data-company-detail-title]")?.textContent).toContain("Yingtai Medical")
     expect(root.querySelector("[data-company-detail-copy]")?.textContent).toContain("English company narration")
     expect(root.textContent).toContain("Development History")
     expect(root.textContent).toContain("Yingtai growth history")
     expect(root.querySelectorAll("[data-company-detail-field]")).toHaveLength(5)
-    expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("Play narration")
+    expect(root.querySelector("[data-company-detail-playback-button]")?.getAttribute("aria-label")).toBe("Play narration")
+    expect(root.querySelector("[data-company-detail-playback-button]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-company-detail-playback-icon]")?.getAttribute("data-icon-state")).toBe("play")
     expect(root.textContent).toContain("Park Introduction")
     expect(root.textContent).toContain("Incubation Platform")
     expect(root.textContent).toContain("Listing Information")
@@ -330,7 +337,8 @@ describe("createMedicalKioskApp", () => {
     expect(audioFactory.controllers).toHaveLength(1)
     expect(audioFactory.controllers[0].src).toBe("https://cdn.example.com/company-en.mp3")
     expect(audioFactory.controllers[0].play).toHaveBeenCalledTimes(1)
-    expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("Pause narration")
+    expect(root.querySelector("[data-company-detail-playback-button]")?.getAttribute("aria-label")).toBe("Stop narration")
+    expect(root.querySelector("[data-company-detail-playback-icon]")?.getAttribute("data-icon-state")).toBe("stop")
     expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("aria-label")).toBe("Mute audio")
     expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("unmuted")
 
@@ -457,7 +465,7 @@ describe("createMedicalKioskApp", () => {
     scrollToSpy.mockRestore()
   })
 
-  it("renders exactly five fixed company detail cards and keeps an empty English value as an empty body", async () => {
+  it("renders exactly five fixed company detail cards inside stacked kiosk content cards and keeps an empty English value as an empty body", async () => {
     const root = mountApp({
       loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
     })
@@ -468,8 +476,12 @@ describe("createMedicalKioskApp", () => {
     await flush()
 
     const fields = Array.from(root.querySelectorAll("[data-company-detail-field]"))
+    const summaryCard = root.querySelector('[data-company-detail-content-card="summary"]')
+    const narrationCard = root.querySelector('[data-company-detail-content-card="narration"]')
+    const fieldsCard = root.querySelector('[data-company-detail-content-card="fields"]')
 
     expect(fields).toHaveLength(5)
+    expect(root.querySelectorAll("[data-company-detail-content-card]")).toHaveLength(3)
     expect(fields.map((field) => field.querySelector("dt")?.textContent?.trim())).toEqual([
       "Development History",
       "Park Introduction",
@@ -480,9 +492,8 @@ describe("createMedicalKioskApp", () => {
     expect(fields[2]?.querySelector("dd")?.textContent).toBe("")
     expect(root.textContent).not.toContain("Honors and Awards")
     expect(root.textContent).not.toContain("Core Manufacturing Capability")
-    expect(root.querySelector("[data-company-detail-fields]")?.compareDocumentPosition(
-      root.querySelector("[data-company-detail-transcript]")
-    ) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(summaryCard?.compareDocumentPosition(narrationCard ?? null) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(narrationCard?.compareDocumentPosition(fieldsCard ?? null) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it("fails fast when a fixed company detail field entry is missing", async () => {

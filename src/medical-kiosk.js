@@ -41,6 +41,7 @@ const KIOSK_COPY = {
     voiceExpandLabel: "展开讲解",
     voiceCollapseLabel: "收起讲解",
     voicePlayLabel: "播放讲解",
+    voiceStopLabel: "停止讲解",
     voicePauseLabel: "暂停讲解",
     voiceIdle: "点击播放语音讲解",
     voicePlaying: "正在播放语音讲解",
@@ -83,6 +84,7 @@ const KIOSK_COPY = {
     voiceExpandLabel: "Expand narration",
     voiceCollapseLabel: "Collapse narration",
     voicePlayLabel: "Play narration",
+    voiceStopLabel: "Stop narration",
     voicePauseLabel: "Pause narration",
     voiceIdle: "Press to play narration",
     voicePlaying: "Playing narration",
@@ -212,6 +214,34 @@ const createSpeakerIconMarkup = (isMuted) => {
   `
 }
 
+const createPlaybackIconMarkup = (isPlaying) => {
+  if (isPlaying) {
+    return `
+      <svg
+        class="kiosk-icon-button__icon kiosk-icon-button__icon--playback"
+        viewBox="0 0 48 48"
+        aria-hidden="true"
+        data-company-detail-playback-icon
+        data-icon-state="stop"
+      >
+        <rect x="15" y="15" width="18" height="18" rx="4" fill="currentColor" />
+      </svg>
+    `
+  }
+
+  return `
+    <svg
+      class="kiosk-icon-button__icon kiosk-icon-button__icon--playback"
+      viewBox="0 0 48 48"
+      aria-hidden="true"
+      data-company-detail-playback-icon
+      data-icon-state="play"
+    >
+      <path d="M18 14.5l16 9.5-16 9.5z" fill="currentColor" />
+    </svg>
+  `
+}
+
 const createLanguageToggleMarkup = (language) => {
   const copy = getUiCopy(language)
   const nextLanguage = language === "zh" ? "en" : "zh"
@@ -277,30 +307,72 @@ const createCompanyDetailMarkup = (company, state) => {
   const companyName = getCompanyName(company, state.language)
   const companySubtitle = getCompanySubtitle(company, state.language)
   const visibleFields = resolveCompanyDetailFields(company, state.language)
+  const companyNarrationLines = splitParagraphs(companySubtitle)
+  const playbackLabel = state.playbackStatus === "playing" ? copy.voiceStopLabel : copy.voicePlayLabel
 
   return `
     <section class="kiosk-company-detail" data-company-detail-panel>
       <header class="kiosk-detail__header kiosk-company-detail__headerbar">
         <button class="kiosk-detail__back kiosk-company-detail__back" type="button" data-company-back>${copy.companyDetailBack}</button>
-        <p class="kiosk-detail__state" data-speaking-state>${state.playbackMessage}</p>
       </header>
-      <article class="kiosk-detail__hero kiosk-company-detail__hero">
-        <div class="kiosk-detail__hero-stage kiosk-company-detail__image-wrap">
-          <div class="kiosk-detail__hero-glow"></div>
-          <img class="kiosk-detail__hero-image kiosk-company-detail__image" src="${company.homeImage}" alt="${companyName}" />
+      <div class="kiosk-company-detail__spotlight" data-company-detail-spotlight>
+        <article class="kiosk-detail__hero kiosk-company-detail__media-card" data-company-detail-media-card>
+          <div class="kiosk-detail__hero-stage kiosk-company-detail__image-wrap">
+            <div class="kiosk-detail__hero-glow"></div>
+            <img class="kiosk-detail__hero-image kiosk-company-detail__image" src="${company.homeImage}" alt="${companyName}" />
+          </div>
+        </article>
+        <div class="kiosk-company-detail__content-stack">
+          <article
+            class="kiosk-detail__description kiosk-company-detail__content-card kiosk-company-detail__summary-card"
+            data-company-detail-content-card="summary"
+          >
+            <div class="kiosk-company-detail__summary-head">
+              <div class="kiosk-company-detail__summary-copy">
+                <p class="kiosk-detail__eyebrow">${copy.companyDetailEyebrow}</p>
+                <h2 class="kiosk-company-detail__title kiosk-detail__title" data-company-detail-title>${companyName}</h2>
+              </div>
+              <button
+                class="kiosk-icon-button kiosk-icon-button--company-playback"
+                type="button"
+                data-speech-toggle
+                data-company-detail-playback-button
+                aria-label="${playbackLabel}"
+                title="${playbackLabel}"
+              >
+                ${createPlaybackIconMarkup(state.playbackStatus === "playing")}
+              </button>
+            </div>
+            <div class="kiosk-company-detail__summary-meta">
+              <p class="kiosk-detail__state kiosk-company-detail__summary-state" data-speaking-state>${state.playbackMessage}</p>
+            </div>
+          </article>
+          <article
+            class="kiosk-detail__description kiosk-company-detail__content-card kiosk-company-detail__narration-card"
+            data-company-detail-content-card="narration"
+            data-company-detail-transcript
+          >
+            <div class="kiosk-detail__description-header">
+              <h3 class="kiosk-detail__description-title">${copy.companyDetailNarrationTitle}</h3>
+            </div>
+            <div class="kiosk-detail__description-copy kiosk-company-detail__narration-copy" data-company-detail-copy>
+              ${
+                companyNarrationLines.length > 0
+                  ? companyNarrationLines.map((line) => `<p>${line}</p>`).join("")
+                  : "<p></p>"
+              }
+            </div>
+          </article>
         </div>
-        <div class="kiosk-detail__copy">
-          <p class="kiosk-detail__eyebrow">${copy.companyDetailEyebrow}</p>
-          <h2 class="kiosk-company-detail__title kiosk-detail__title" data-company-detail-title>${companyName}</h2>
-          <button class="kiosk-detail__speak" type="button" data-speech-toggle>
-            ${state.playbackStatus === "playing" ? copy.voicePauseLabel : copy.voicePlayLabel}
-          </button>
-        </div>
-      </article>
+      </div>
       ${
         visibleFields.length > 0
           ? `
-            <section class="kiosk-detail__description kiosk-company-detail__description" data-company-detail-fields-panel>
+            <section
+              class="kiosk-detail__description kiosk-company-detail__content-card kiosk-company-detail__fields-card"
+              data-company-detail-content-card="fields"
+              data-company-detail-fields-panel
+            >
               <div class="kiosk-detail__description-header">
                 <h3 class="kiosk-detail__description-title">${copy.companyDetailCardsTitle}</h3>
               </div>
@@ -310,20 +382,16 @@ const createCompanyDetailMarkup = (company, state) => {
             </section>
           `
           : `
-            <section class="kiosk-company-detail__empty" data-company-detail-empty>
+            <section
+              class="kiosk-company-detail__empty kiosk-company-detail__content-card kiosk-company-detail__fields-card"
+              data-company-detail-content-card="fields"
+              data-company-detail-empty
+            >
               <h3>${copy.companyDetailEmptyTitle}</h3>
               <p>${copy.companyDetailEmptyBody}</p>
             </section>
           `
       }
-      <section class="kiosk-detail__description kiosk-company-detail__transcript" data-company-detail-transcript>
-        <div class="kiosk-detail__description-header">
-          <h3 class="kiosk-detail__description-title">${copy.companyDetailNarrationTitle}</h3>
-        </div>
-        <div class="kiosk-detail__description-copy">
-          <p class="kiosk-company-detail__copy" data-company-detail-copy>${companySubtitle}</p>
-        </div>
-      </section>
     </section>
   `
 }

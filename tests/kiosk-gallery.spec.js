@@ -451,6 +451,7 @@ test("clicking the home hero opens company detail loaded from IntRuoyi and retur
 
   await page.locator("[data-home-company-entry-card]").click()
   await expect(page.locator("[data-company-detail-panel]")).toBeVisible()
+  await expect(page.locator("[data-company-detail-media-card]")).toBeVisible()
   await expect(page.locator("[data-company-detail-field]")).toHaveCount(5)
   await expect(page.locator("[data-company-detail-title]")).toContainText("Yingtai Medical CN")
   await expect(page.locator("body")).toContainText("Yingtai growth timeline")
@@ -461,7 +462,25 @@ test("clicking the home hero opens company detail loaded from IntRuoyi and retur
   await expect(page.locator("[data-home-hero-image]")).toHaveCount(1)
 })
 
-test("root company detail keeps five fixed cards in English and leaves empty card values blank", async ({ page }) => {
+test("kiosk company detail keeps five fixed cards, uses icon playback control, and leaves empty card values blank", async ({ page }) => {
+  await page.addInitScript(() => {
+    class MockAudio {
+      constructor(src = "") {
+        this.src = src
+        this.currentTime = 0
+        this.muted = false
+      }
+
+      play() {
+        return Promise.resolve()
+      }
+
+      pause() {}
+    }
+
+    window.Audio = MockAudio
+  })
+
   await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
@@ -480,23 +499,46 @@ test("root company detail keeps five fixed cards in English and leaves empty car
   await page.locator("[data-language-toggle-button]").click()
   await page.locator("[data-home-company-entry-card]").click()
 
+  await expect(page.locator("[data-company-detail-media-card]")).toBeVisible()
+  await expect(page.locator("[data-company-detail-content-card]")).toHaveCount(3)
   await expect(page.locator("[data-company-detail-field]")).toHaveCount(5)
   await expect(page.locator('[data-company-detail-field-index="0"] dt')).toContainText("Development History")
   await expect(page.locator('[data-company-detail-field-index="1"] dt')).toContainText("Park Introduction")
   await expect(page.locator('[data-company-detail-field-index="2"] dt')).toContainText("Incubation Platform")
   await expect(page.locator('[data-company-detail-field-index="2"] dd')).toHaveText("")
-  await expect(page.locator("[data-speech-toggle]")).toBeVisible()
+  await expect(page.locator("[data-company-detail-playback-button]")).toBeVisible()
+  await expect(page.locator("[data-company-detail-playback-button]")).toHaveAttribute("aria-label", "Play narration")
+  await expect(page.locator("[data-company-detail-playback-icon]")).toHaveAttribute("data-icon-state", "play")
   await expect(page.locator("body")).not.toContainText("Honors and Awards")
   await expect(page.locator("body")).not.toContainText("Core Manufacturing Capability")
 
+  await page.locator("[data-company-detail-playback-button]").click()
+  await expect(page.locator("[data-company-detail-playback-button]")).toHaveAttribute("aria-label", "Stop narration")
+  await expect(page.locator("[data-company-detail-playback-icon]")).toHaveAttribute("data-icon-state", "stop")
+
   const layout = await page.evaluate(() => {
+    const media = document.querySelector("[data-company-detail-media-card]")
+    const summary = document.querySelector('[data-company-detail-content-card="summary"]')
+    const narration = document.querySelector('[data-company-detail-content-card="narration"]')
+    const fieldsCard = document.querySelector('[data-company-detail-content-card="fields"]')
     const fields = document.querySelector("[data-company-detail-fields]")
-    const transcript = document.querySelector("[data-company-detail-transcript]")
+    const playButton = document.querySelector("[data-company-detail-playback-button]")
     return {
+      mediaRight: media?.getBoundingClientRect().right ?? 0,
+      summaryLeft: summary?.getBoundingClientRect().left ?? 0,
+      narrationTop: narration?.getBoundingClientRect().top ?? 0,
+      summaryBottom: summary?.getBoundingClientRect().bottom ?? 0,
+      fieldsCardTop: fieldsCard?.getBoundingClientRect().top ?? 0,
       fieldsBottom: fields?.getBoundingClientRect().bottom ?? 0,
-      transcriptTop: transcript?.getBoundingClientRect().top ?? 0
+      playWidth: playButton?.getBoundingClientRect().width ?? 0,
+      playHeight: playButton?.getBoundingClientRect().height ?? 0
     }
   })
 
-  expect(layout.transcriptTop).toBeGreaterThan(layout.fieldsBottom)
+  expect(layout.summaryLeft).toBeGreaterThan(layout.mediaRight)
+  expect(layout.narrationTop).toBeGreaterThan(layout.summaryBottom)
+  expect(layout.fieldsCardTop).toBeGreaterThan(layout.summaryBottom)
+  expect(layout.playWidth).toBeLessThan(72)
+  expect(layout.playHeight).toBeLessThan(72)
+  expect(layout.fieldsBottom).toBeGreaterThan(layout.fieldsCardTop)
 })
