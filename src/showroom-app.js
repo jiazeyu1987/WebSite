@@ -18,6 +18,8 @@ const SHOWROOM_COPY = {
     landingCta: "\u70b9\u51fb\u8fdb\u5165\u516c\u53f8\u8be6\u60c5",
     headerBody: "\u516c\u5f00\u5165\u53e3\u4ec5\u5c55\u793a\u516c\u53f8\u4e3b\u89c6\u89c9\u3001\u516c\u53f8\u8be6\u60c5\u548c\u8bb2\u89e3\u64ad\u653e\u3002",
     detailEyebrow: "\u516c\u53f8\u8be6\u60c5",
+    detailCardsTitle: "\u516c\u53f8\u4ecb\u7ecd\u5361\u7247",
+    detailNarrationTitle: "\u8bed\u97f3\u8bb2\u89e3\u6587\u6848",
     backLabel: "\u8fd4\u56de\u9996\u9875",
     playLabel: "\u64ad\u653e\u8bb2\u89e3",
     pauseLabel: "\u6682\u505c\u8bb2\u89e3",
@@ -41,6 +43,8 @@ const SHOWROOM_COPY = {
     landingCta: "View company profile",
     headerBody: "The public entry shows the company hero, company detail, and synchronized narration playback.",
     detailEyebrow: "Company Detail",
+    detailCardsTitle: "Company Profile Cards",
+    detailNarrationTitle: "Narration Script",
     backLabel: "Back to home",
     playLabel: "Play narration",
     pauseLabel: "Pause narration",
@@ -179,46 +183,59 @@ const createDetailMarkup = (company, state) => {
   return `
     <section class="showroom-screen showroom-screen--detail" data-screen="company-detail" data-company-detail>
       <div class="showroom-detail">
-        <div class="showroom-detail__media" data-company-detail-media>
-          <img class="showroom-detail__image" src="${company.homeImage}" alt="${companyName}" />
-        </div>
-        <div class="showroom-detail__body">
-          <section class="showroom-detail__summary" data-company-detail-summary>
-            <header class="showroom-detail__header">
-              <p class="showroom-eyebrow">${copy.detailEyebrow}</p>
-              <h2 data-company-detail-title>${companyName}</h2>
-            </header>
+        <header class="showroom-detail__headerbar">
+          <button class="showroom-detail__back" type="button" data-company-back>${copy.backLabel}</button>
+          <p class="showroom-play-state showroom-detail__state" data-company-play-state>${getPlaybackMessage(state)}</p>
+        </header>
 
+        <article class="showroom-detail__hero" data-company-detail-media>
+          <div class="showroom-detail__hero-stage">
+            <div class="showroom-detail__hero-glow"></div>
+            <img class="showroom-detail__hero-image" src="${company.homeImage}" alt="${companyName}" />
+          </div>
+          <div class="showroom-detail__copy">
+            <p class="showroom-detail__eyebrow">${copy.detailEyebrow}</p>
+            <h2 data-company-detail-title>${companyName}</h2>
             <div
               class="showroom-detail__actions showroom-detail__action-bar"
               data-company-detail-actions
               data-company-detail-action-bar
             >
-              <button class="showroom-back" type="button" data-company-back>${copy.backLabel}</button>
-              <button class="showroom-play" type="button" data-company-play>
+              <button class="showroom-detail__speak" type="button" data-company-play>
                 ${state.playbackStatus === "playing" ? copy.pauseLabel : copy.playLabel}
               </button>
-              <p class="showroom-play-state" data-company-play-state>${getPlaybackMessage(state)}</p>
             </div>
+          </div>
+        </article>
 
-            <p class="showroom-copy" data-company-detail-copy>${companySubtitle}</p>
-          </section>
-
-          ${
-            visibleFields.length > 0
-              ? `
+        ${
+          visibleFields.length > 0
+            ? `
+              <section class="showroom-detail__description" data-company-fields-panel>
+                <div class="showroom-detail__description-header">
+                  <h3 class="showroom-detail__description-title">${copy.detailCardsTitle}</h3>
+                </div>
                 <dl class="showroom-company-fields" data-company-fields>
                   ${visibleFields.map((field, index) => createCompanyFieldMarkup(field, index)).join("")}
                 </dl>
-              `
-              : `
-                <section class="showroom-empty-state" data-company-empty-state>
-                  <h3>${copy.emptyTitle}</h3>
-                  <p>${copy.emptyBody}</p>
-                </section>
-              `
-          }
-        </div>
+              </section>
+            `
+            : `
+              <section class="showroom-empty-state" data-company-empty-state>
+                <h3>${copy.emptyTitle}</h3>
+                <p>${copy.emptyBody}</p>
+              </section>
+            `
+        }
+
+        <section class="showroom-detail__transcript" data-company-detail-summary>
+          <div class="showroom-detail__description-header">
+            <h3 class="showroom-detail__description-title">${copy.detailNarrationTitle}</h3>
+          </div>
+          <div class="showroom-detail__transcript-copy">
+            <p class="showroom-copy" data-company-detail-copy>${companySubtitle}</p>
+          </div>
+        </section>
       </div>
     </section>
   `

@@ -276,7 +276,7 @@ test("mobile showroom detail keeps image title and play action in the first scre
 
   await page.locator("[data-company-entry-card]").click()
 
-  const detailImage = page.locator(".showroom-detail__image")
+  const detailImage = page.locator(".showroom-detail__hero-image")
   const detailTitle = page.locator("[data-company-detail-title]")
   const playButton = page.locator("[data-company-mobile-play]")
   const fields = page.locator("[data-company-fields]")
@@ -286,7 +286,7 @@ test("mobile showroom detail keeps image title and play action in the first scre
   await expect(playButton).toBeInViewport()
 
   const layout = await page.evaluate(() => {
-    const image = document.querySelector(".showroom-detail__image")
+    const image = document.querySelector(".showroom-detail__hero-image")
     const title = document.querySelector("[data-company-detail-title]")
     const play = document.querySelector("[data-company-mobile-play]")
     const fields = document.querySelector("[data-company-fields]")
@@ -302,6 +302,43 @@ test("mobile showroom detail keeps image title and play action in the first scre
   expect(layout.titleTop).toBeGreaterThan(layout.imageBottom)
   expect(layout.playTop).toBeGreaterThanOrEqual(layout.titleTop)
   expect(layout.fieldsTop).toBeGreaterThan(layout.titleTop)
+})
+
+test("desktop showroom detail prioritizes the five cards before the narration transcript and keeps the play button visible", async ({ page }) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createWebsiteConfigPayload()
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 1440, height: 960 })
+  await page.goto("/showroom")
+  await page.locator("[data-company-entry-card]").click()
+
+  const playButton = page.locator("[data-company-play]")
+  const fields = page.locator("[data-company-fields]")
+  const transcript = page.locator("[data-company-detail-summary]")
+
+  await expect(playButton).toBeVisible()
+  await expect(fields).toBeVisible()
+  await expect(transcript).toBeVisible()
+
+  const layout = await page.evaluate(() => {
+    const fields = document.querySelector("[data-company-fields]")
+    const transcript = document.querySelector("[data-company-detail-summary]")
+    return {
+      fieldsBottom: fields?.getBoundingClientRect().bottom ?? 0,
+      transcriptTop: transcript?.getBoundingClientRect().top ?? 0
+    }
+  })
+
+  expect(layout.transcriptTop).toBeGreaterThan(layout.fieldsBottom)
 })
 
 test("mobile showroom detail keeps the action bar visible while scrolling fields", async ({ page }) => {

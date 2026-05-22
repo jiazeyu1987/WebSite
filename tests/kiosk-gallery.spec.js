@@ -485,6 +485,18 @@ test("root company detail keeps five fixed cards in English and leaves empty car
   await expect(page.locator('[data-company-detail-field-index="1"] dt')).toContainText("Park Introduction")
   await expect(page.locator('[data-company-detail-field-index="2"] dt')).toContainText("Incubation Platform")
   await expect(page.locator('[data-company-detail-field-index="2"] dd')).toHaveText("")
+  await expect(page.locator("[data-speech-toggle]")).toBeVisible()
   await expect(page.locator("body")).not.toContainText("Honors and Awards")
   await expect(page.locator("body")).not.toContainText("Core Manufacturing Capability")
+
+  const layout = await page.evaluate(() => {
+    const fields = document.querySelector("[data-company-detail-fields]")
+    const transcript = document.querySelector("[data-company-detail-transcript]")
+    return {
+      fieldsBottom: fields?.getBoundingClientRect().bottom ?? 0,
+      transcriptTop: transcript?.getBoundingClientRect().top ?? 0
+    }
+  })
+
+  expect(layout.transcriptTop).toBeGreaterThan(layout.fieldsBottom)
 })

@@ -317,6 +317,7 @@ describe("createMedicalKioskApp", () => {
     expect(root.textContent).toContain("Development History")
     expect(root.textContent).toContain("Yingtai growth history")
     expect(root.querySelectorAll("[data-company-detail-field]")).toHaveLength(5)
+    expect(root.querySelector("[data-speech-toggle]")?.textContent).toContain("Play narration")
     expect(root.textContent).toContain("Park Introduction")
     expect(root.textContent).toContain("Incubation Platform")
     expect(root.textContent).toContain("Listing Information")
@@ -479,6 +480,9 @@ describe("createMedicalKioskApp", () => {
     expect(fields[2]?.querySelector("dd")?.textContent).toBe("")
     expect(root.textContent).not.toContain("Honors and Awards")
     expect(root.textContent).not.toContain("Core Manufacturing Capability")
+    expect(root.querySelector("[data-company-detail-fields]")?.compareDocumentPosition(
+      root.querySelector("[data-company-detail-transcript]")
+    ) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it("fails fast when a fixed company detail field entry is missing", async () => {

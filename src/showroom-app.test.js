@@ -235,7 +235,7 @@ describe("createShowroomConsumerApp", () => {
     expect(root.querySelector("[data-company-play-state]")?.textContent).toContain("Playing English narration")
   })
 
-  it("renders the company detail summary and play action before the public field list", async () => {
+  it("renders company detail cards before the narration transcript and keeps the play action visible in the hero area", async () => {
     const root = mountApp({
       loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig()),
       createAudio: vi.fn(() => createAudioController())
@@ -244,19 +244,19 @@ describe("createShowroomConsumerApp", () => {
 
     root.querySelector("[data-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
 
-    const summary = root.querySelector("[data-company-detail-summary]")
-    const actions = root.querySelector("[data-company-detail-actions]")
+    const hero = root.querySelector("[data-company-detail-media]")
     const fields = root.querySelector("[data-company-fields]")
+    const transcript = root.querySelector("[data-company-detail-summary]")
 
-    expect(summary).not.toBeNull()
-    expect(actions).not.toBeNull()
+    expect(hero).not.toBeNull()
+    expect(fields).not.toBeNull()
+    expect(transcript).not.toBeNull()
     expect(root.querySelector("[data-company-play]")?.textContent).toContain("播放讲解")
     expect(root.querySelector("[data-company-detail-copy]")?.textContent).toContain("公司中文讲解")
-    expect(summary?.compareDocumentPosition(fields) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(actions?.compareDocumentPosition(fields) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(fields?.compareDocumentPosition(transcript) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it("renders a dedicated detail action bar that groups back and play actions", async () => {
+  it("renders a dedicated hero play action and keeps the transcript below the five cards", async () => {
     const root = mountApp({
       loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig()),
       createAudio: vi.fn(() => createAudioController())
@@ -267,11 +267,11 @@ describe("createShowroomConsumerApp", () => {
 
     const actionBar = root.querySelector("[data-company-detail-action-bar]")
     const fields = root.querySelector("[data-company-fields]")
+    const transcript = root.querySelector("[data-company-detail-summary]")
 
     expect(actionBar).not.toBeNull()
-    expect(actionBar?.textContent).toContain("返回首页")
     expect(actionBar?.textContent).toContain("播放讲解")
-    expect(actionBar?.compareDocumentPosition(fields) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(fields?.compareDocumentPosition(transcript) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it("renders stable field label/value markers for the company public fields", async () => {
