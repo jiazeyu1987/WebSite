@@ -340,20 +340,6 @@ test("returning from product detail restores the desktop gallery internal scroll
     })
   })
 
-  await page.route("**/showroom/display/product/*", async (route) => {
-    const productId = Number(route.request().url().split("/").pop())
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        code: 0,
-        msg: "",
-        data: createProductDetailPayload(productId)
-      })
-    })
-  })
-
   await page.setViewportSize({ width: 1920, height: 911 })
   await page.goto("/")
 
@@ -386,20 +372,6 @@ test("returning from product detail restores the mobile document scroll position
         code: 0,
         msg: "",
         data: createApiPayload()
-      })
-    })
-  })
-
-  await page.route("**/showroom/display/product/*", async (route) => {
-    const productId = Number(route.request().url().split("/").pop())
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        code: 0,
-        msg: "",
-        data: createProductDetailPayload(productId)
       })
     })
   })
