@@ -102,9 +102,7 @@
 
 .showroom-action,
 .showroom-back,
-.showroom-play,
-.showroom-detail__back,
-.showroom-detail__speak {
+.showroom-detail__back {
   cursor: pointer;
   font: inherit;
   transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
@@ -112,9 +110,7 @@
 
 .showroom-action,
 .showroom-back,
-.showroom-play,
-.showroom-detail__back,
-.showroom-detail__speak {
+.showroom-detail__back {
   width: fit-content;
   padding: 12px 18px;
   border: 1px solid var(--showroom-border);
@@ -124,9 +120,7 @@
 
 .showroom-action:hover,
 .showroom-back:hover,
-.showroom-play:hover,
 .showroom-detail__back:hover,
-.showroom-detail__speak:hover,
 .showroom-company-card:hover {
   transform: translateY(-1px);
   border-color: rgba(28, 95, 212, 0.28);
@@ -294,18 +288,10 @@
 
 .showroom-detail__speak {
   width: 100%;
-  min-height: 46px;
-  color: var(--showroom-primary-deep);
-  background: linear-gradient(135deg, #edf4ff 0%, #ffffff 100%);
 }
 
 .showroom-detail__actions {
   gap: 12px;
-}
-
-.showroom-play {
-  background: linear-gradient(135deg, #edf4ff 0%, #ffffff 100%);
-  color: var(--showroom-primary-deep);
 }
 
 .showroom-play-state {

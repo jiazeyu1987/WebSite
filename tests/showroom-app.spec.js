@@ -179,9 +179,27 @@ test("keeps the kiosk homepage on root and renders the bilingual showroom compan
   await expect(page.locator('[data-company-field-index="2"] [data-company-field-value]')).toHaveText("")
   await expect(page.locator("body")).not.toContainText("Honors and Awards")
   await expect(page.locator("body")).not.toContainText("Core Manufacturing Capability")
+  await expect(page.locator("[data-company-play]")).toHaveClass(/runtime-playback-button/)
+  await expect(page.locator("[data-company-play]")).toHaveAttribute("aria-label", "Play narration")
+  await expect(page.locator("[data-company-play]")).toHaveAttribute("title", "Play narration")
+  await expect(page.locator("[data-company-play]")).toHaveText("")
+  await expect(page.locator("[data-company-play] [data-playback-icon]")).toHaveAttribute("data-icon-state", "play")
+  await expect(page.locator("[data-company-mobile-play]")).toHaveClass(/runtime-playback-button/)
+  await expect(page.locator("[data-company-mobile-play]")).toHaveAttribute("aria-label", "Play narration")
+  await expect(page.locator("[data-company-mobile-play]")).toHaveAttribute("title", "Play narration")
+  await expect(page.locator("[data-company-mobile-play]")).toHaveText("")
+  await expect(page.locator("[data-company-mobile-play] [data-playback-icon]")).toHaveAttribute("data-icon-state", "play")
 
   await page.locator("[data-company-play]").click()
   await expect(page.locator("[data-company-play-state]")).toContainText("Playing English narration")
+  await expect(page.locator("[data-company-play]")).toHaveAttribute("aria-label", "Pause narration")
+  await expect(page.locator("[data-company-play]")).toHaveAttribute("title", "Pause narration")
+  await expect(page.locator("[data-company-play]")).toHaveText("")
+  await expect(page.locator("[data-company-play] [data-playback-icon]")).toHaveAttribute("data-icon-state", "pause")
+  await expect(page.locator("[data-company-mobile-play]")).toHaveAttribute("aria-label", "Pause narration")
+  await expect(page.locator("[data-company-mobile-play]")).toHaveAttribute("title", "Pause narration")
+  await expect(page.locator("[data-company-mobile-play]")).toHaveText("")
+  await expect(page.locator("[data-company-mobile-play] [data-playback-icon]")).toHaveAttribute("data-icon-state", "pause")
 
   const audioMetrics = await page.evaluate(() => window.__audioMetrics)
   expect(audioMetrics.playCalls).toBe(1)
@@ -284,6 +302,11 @@ test("mobile showroom detail keeps image title and play action in the first scre
   await expect(detailImage).toBeInViewport()
   await expect(detailTitle).toBeInViewport()
   await expect(playButton).toBeInViewport()
+  await expect(playButton).toHaveClass(/runtime-playback-button/)
+  await expect(playButton).toHaveAttribute("aria-label", "播放讲解")
+  await expect(playButton).toHaveAttribute("title", "播放讲解")
+  await expect(playButton).toHaveText("")
+  await expect(playButton.locator("[data-playback-icon]")).toHaveAttribute("data-icon-state", "play")
 
   const layout = await page.evaluate(() => {
     const image = document.querySelector(".showroom-detail__hero-image")
@@ -326,6 +349,8 @@ test("desktop showroom detail prioritizes the five cards before the narration tr
   const transcript = page.locator("[data-company-detail-summary]")
 
   await expect(playButton).toBeVisible()
+  await expect(playButton).toHaveClass(/runtime-playback-button/)
+  await expect(playButton).toHaveText("")
   await expect(fields).toBeVisible()
   await expect(transcript).toBeVisible()
 
@@ -365,7 +390,9 @@ test("mobile showroom detail keeps the action bar visible while scrolling fields
   await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight))
   await expect(actionBar).toBeInViewport()
   await expect(actionBar).toContainText("返回首页")
-  await expect(actionBar).toContainText("播放讲解")
+  await expect(page.locator("[data-company-mobile-play]")).toHaveAttribute("aria-label", "播放讲解")
+  await expect(page.locator("[data-company-mobile-play]")).toHaveAttribute("title", "播放讲解")
+  await expect(page.locator("[data-company-mobile-play]")).toHaveText("")
 })
 
 test("mobile showroom detail keeps the action bar in the lower thumb zone", async ({ page }) => {

@@ -1,3 +1,4 @@
+import "./runtime-playback-button.css"
 import "./medical-kiosk.css"
 import "./showroom-app.css"
 import { createMedicalKioskApp } from "./medical-kiosk.js"

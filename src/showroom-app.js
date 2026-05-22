@@ -1,5 +1,6 @@
 import { fetchShowroomWebsiteConfig } from "./showroom-api.js"
 import { resolveCompanyDetailFields } from "./company-detail-fields.js"
+import { createRuntimePlaybackButtonMarkup } from "./runtime-playback-button.js"
 
 const SHOWROOM_LANGUAGE_STORAGE_KEY = "showroom-language"
 const SHOWROOM_LANGUAGES = new Set(["zh", "en"])
@@ -174,6 +175,15 @@ const createCompanyFieldMarkup = (field, index) => `
   </div>
 `
 
+const createPlaybackButtonMarkup = (state, label, buttonAttributes, size, className) =>
+  createRuntimePlaybackButtonMarkup({
+    isPlaying: state.playbackStatus === "playing",
+    label,
+    className,
+    size,
+    buttonAttributes
+  })
+
 const createDetailMarkup = (company, state) => {
   const copy = getShowroomCopy(state.language)
   const companyName = getCompanyName(company, state.language)
@@ -201,9 +211,13 @@ const createDetailMarkup = (company, state) => {
               data-company-detail-actions
               data-company-detail-action-bar
             >
-              <button class="showroom-detail__speak" type="button" data-company-play>
-                ${state.playbackStatus === "playing" ? copy.pauseLabel : copy.playLabel}
-              </button>
+              ${createPlaybackButtonMarkup(
+                state,
+                state.playbackStatus === "playing" ? copy.pauseLabel : copy.playLabel,
+                { "data-company-play": true },
+                "panel",
+                "showroom-detail__speak"
+              )}
             </div>
           </div>
         </article>
@@ -247,9 +261,13 @@ const createMobileActionBarMarkup = (state) => {
   return `
     <div class="showroom-mobile-action-bar" data-company-mobile-action-bar>
       <button class="showroom-back" type="button" data-company-mobile-back>${copy.backLabel}</button>
-      <button class="showroom-play" type="button" data-company-mobile-play>
-        ${state.playbackStatus === "playing" ? copy.pauseLabel : copy.playLabel}
-      </button>
+      ${createPlaybackButtonMarkup(
+        state,
+        state.playbackStatus === "playing" ? copy.pauseLabel : copy.playLabel,
+        { "data-company-mobile-play": true },
+        "mobile",
+        "showroom-play"
+      )}
       <p class="showroom-play-state" data-company-mobile-play-state>${getPlaybackMessage(state)}</p>
     </div>
   `

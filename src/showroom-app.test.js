@@ -218,6 +218,16 @@ describe("createShowroomConsumerApp", () => {
     await flush()
 
     root.querySelector("[data-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    expect(root.querySelector("[data-company-play]")?.classList.contains("runtime-playback-button")).toBe(true)
+    expect(root.querySelector("[data-company-play]")?.getAttribute("aria-label")).toBe("播放讲解")
+    expect(root.querySelector("[data-company-play]")?.getAttribute("title")).toBe("播放讲解")
+    expect(root.querySelector("[data-company-play]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-company-play]")?.querySelector("[data-playback-icon]")?.getAttribute("data-icon-state")).toBe("play")
+    expect(root.querySelector("[data-company-mobile-play]")?.classList.contains("runtime-playback-button")).toBe(true)
+    expect(root.querySelector("[data-company-mobile-play]")?.getAttribute("aria-label")).toBe("播放讲解")
+    expect(root.querySelector("[data-company-mobile-play]")?.getAttribute("title")).toBe("播放讲解")
+    expect(root.querySelector("[data-company-mobile-play]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-company-mobile-play]")?.querySelector("[data-playback-icon]")?.getAttribute("data-icon-state")).toBe("play")
     root.querySelector("[data-company-play]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     await flush()
 
@@ -233,6 +243,14 @@ describe("createShowroomConsumerApp", () => {
     expect(audioFactory.controllers[1].src).toBe("https://cdn.example.com/company-en.mp3")
     expect(audioFactory.controllers[1].play).toHaveBeenCalledTimes(1)
     expect(root.querySelector("[data-company-play-state]")?.textContent).toContain("Playing English narration")
+    expect(root.querySelector("[data-company-play]")?.getAttribute("aria-label")).toBe("Pause narration")
+    expect(root.querySelector("[data-company-play]")?.getAttribute("title")).toBe("Pause narration")
+    expect(root.querySelector("[data-company-play]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-company-play]")?.querySelector("[data-playback-icon]")?.getAttribute("data-icon-state")).toBe("pause")
+    expect(root.querySelector("[data-company-mobile-play]")?.getAttribute("aria-label")).toBe("Pause narration")
+    expect(root.querySelector("[data-company-mobile-play]")?.getAttribute("title")).toBe("Pause narration")
+    expect(root.querySelector("[data-company-mobile-play]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-company-mobile-play]")?.querySelector("[data-playback-icon]")?.getAttribute("data-icon-state")).toBe("pause")
   })
 
   it("renders company detail cards before the narration transcript and keeps the play action visible in the hero area", async () => {
@@ -251,7 +269,8 @@ describe("createShowroomConsumerApp", () => {
     expect(hero).not.toBeNull()
     expect(fields).not.toBeNull()
     expect(transcript).not.toBeNull()
-    expect(root.querySelector("[data-company-play]")?.textContent).toContain("播放讲解")
+    expect(root.querySelector("[data-company-play]")?.classList.contains("runtime-playback-button")).toBe(true)
+    expect(root.querySelector("[data-company-play]")?.textContent?.trim()).toBe("")
     expect(root.querySelector("[data-company-detail-copy]")?.textContent).toContain("公司中文讲解")
     expect(fields?.compareDocumentPosition(transcript) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
@@ -270,7 +289,10 @@ describe("createShowroomConsumerApp", () => {
     const transcript = root.querySelector("[data-company-detail-summary]")
 
     expect(actionBar).not.toBeNull()
-    expect(actionBar?.textContent).toContain("播放讲解")
+    expect(root.querySelector("[data-company-play]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-company-play]")?.querySelector("[data-playback-icon]")?.getAttribute("data-icon-state")).toBe("play")
+    expect(root.querySelector("[data-company-mobile-play]")?.textContent?.trim()).toBe("")
+    expect(root.querySelector("[data-company-mobile-play]")?.querySelector("[data-playback-icon]")?.getAttribute("data-icon-state")).toBe("play")
     expect(fields?.compareDocumentPosition(transcript) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
