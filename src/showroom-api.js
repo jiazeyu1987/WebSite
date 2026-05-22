@@ -1,4 +1,5 @@
 export const SHOWROOM_APP_CONFIG_ENDPOINT = "/showroom/display/app-config"
+export const SHOWROOM_WEBSITE_CONFIG_ENDPOINT = "/showroom/display/website-config"
 export const SHOWROOM_COMPANY_DETAIL_ENDPOINT = "/showroom/display/company"
 export const SHOWROOM_PRODUCT_DETAIL_ENDPOINT_PREFIX = "/showroom/display/product/"
 
@@ -63,53 +64,92 @@ const mapBilingualPublicField = (field, label) => {
   }
 }
 
+const mapShowroomCompany = (company, label, { includePublicFields = false } = {}) => {
+  const companyObject = requireObject(company, label)
+  const mappedCompany = {
+    id: requirePositiveId(companyObject.companyId, `${label}.companyId`),
+    name: requireString(companyObject.name, `${label}.name`),
+    nameEn: requireString(companyObject.nameEn, `${label}.nameEn`),
+    homeImage: requireString(companyObject.homeImageUrl, `${label}.homeImageUrl`),
+    subtitleZh: requireString(companyObject.subtitleZh, `${label}.subtitleZh`),
+    subtitleEn: requireString(companyObject.subtitleEn, `${label}.subtitleEn`),
+    audioZh: requireString(companyObject.audioZhUrl, `${label}.audioZhUrl`),
+    audioEn: requireString(companyObject.audioEnUrl, `${label}.audioEnUrl`),
+    bilingualPublicFields: requireArray(companyObject.bilingualPublicFields, `${label}.bilingualPublicFields`).map(
+      (field, fieldIndex) => mapBilingualPublicField(field, `${label}.bilingualPublicFields[${fieldIndex}]`)
+    )
+  }
+
+  if (includePublicFields) {
+    mappedCompany.publicFields = requireArray(companyObject.publicFields, `${label}.publicFields`).map(mapPublicField)
+  }
+
+  return mappedCompany
+}
+
+const mapShowroomProductCard = (product, label, { includeBilingualPublicFields = false } = {}) => {
+  const productObject = requireObject(product, label)
+  const mappedProduct = {
+    id: requirePositiveId(productObject.productId, `${label}.productId`),
+    code: requireString(productObject.productCode, `${label}.productCode`),
+    nameCn: requireString(productObject.nameCn, `${label}.nameCn`),
+    nameEn: requireString(productObject.nameEn, `${label}.nameEn`),
+    previewImageUrl: requireString(productObject.previewImageUrl, `${label}.previewImageUrl`),
+    subtitleZh: requireString(productObject.subtitleZh, `${label}.subtitleZh`),
+    subtitleEn: requireString(productObject.subtitleEn, `${label}.subtitleEn`),
+    audioZh: requireString(productObject.audioZhUrl, `${label}.audioZhUrl`),
+    audioEn: requireString(productObject.audioEnUrl, `${label}.audioEnUrl`)
+  }
+
+  if (includeBilingualPublicFields) {
+    mappedProduct.bilingualPublicFields = requireArray(productObject.bilingualPublicFields, `${label}.bilingualPublicFields`).map(
+      (field, fieldIndex) => mapBilingualPublicField(field, `${label}.bilingualPublicFields[${fieldIndex}]`)
+    )
+  }
+
+  return mappedProduct
+}
+
+const mapShowroomList = (showrooms, label, { includeProductBilingualPublicFields = false } = {}) =>
+  showrooms.map((showroom, showroomIndex) => {
+    const showroomLabel = `${label}[${showroomIndex}]`
+    const showroomObject = requireObject(showroom, showroomLabel)
+    const products = Array.isArray(showroomObject.products) ? showroomObject.products : []
+
+    return {
+      id: requirePositiveId(showroomObject.hallId, `${showroomLabel}.hallId`),
+      code: requireString(showroomObject.hallCode, `${showroomLabel}.hallCode`),
+      name: requireString(showroomObject.name, `${showroomLabel}.name`),
+      nameEn: requireString(showroomObject.nameEn, `${showroomLabel}.nameEn`),
+      description: requirePresentString(showroomObject.description, `${showroomLabel}.description`),
+      descriptionEn: requirePresentString(showroomObject.descriptionEn, `${showroomLabel}.descriptionEn`),
+      previewImageUrl: requireString(showroomObject.previewImageUrl, `${showroomLabel}.previewImageUrl`),
+      products: products.map((product, productIndex) =>
+        mapShowroomProductCard(product, `${showroomLabel}.products[${productIndex}]`, {
+          includeBilingualPublicFields: includeProductBilingualPublicFields
+        })
+      )
+    }
+  })
+
 export const mapShowroomAppConfig = (payload) => {
   const data = requireObject(payload, "app-config payload")
-  const company = requireObject(data.company, "company")
   const showrooms = Array.isArray(data.showrooms) ? data.showrooms : []
 
   return {
-    company: {
-      id: requirePositiveId(company.companyId, "company.companyId"),
-      name: requireString(company.name, "company.name"),
-      nameEn: requireString(company.nameEn, "company.nameEn"),
-      homeImage: requireString(company.homeImageUrl, "company.homeImageUrl"),
-      subtitleZh: requireString(company.subtitleZh, "company.subtitleZh"),
-      subtitleEn: requireString(company.subtitleEn, "company.subtitleEn"),
-      audioZh: requireString(company.audioZhUrl, "company.audioZhUrl"),
-      audioEn: requireString(company.audioEnUrl, "company.audioEnUrl"),
-      publicFields: requireArray(company.publicFields, "company.publicFields").map(mapPublicField),
-      bilingualPublicFields: requireArray(company.bilingualPublicFields, "company.bilingualPublicFields").map((field, fieldIndex) =>
-        mapBilingualPublicField(field, `company.bilingualPublicFields[${fieldIndex}]`)
-      )
-    },
-    showrooms: showrooms.map((showroom, showroomIndex) => {
-      const showroomObject = requireObject(showroom, `showrooms[${showroomIndex}]`)
-      const products = Array.isArray(showroomObject.products) ? showroomObject.products : []
+    company: mapShowroomCompany(data.company, "company", { includePublicFields: true }),
+    showrooms: mapShowroomList(showrooms, "showrooms")
+  }
+}
 
-      return {
-        id: requirePositiveId(showroomObject.hallId, `showrooms[${showroomIndex}].hallId`),
-        code: requireString(showroomObject.hallCode, `showrooms[${showroomIndex}].hallCode`),
-        name: requireString(showroomObject.name, `showrooms[${showroomIndex}].name`),
-        nameEn: requireString(showroomObject.nameEn, `showrooms[${showroomIndex}].nameEn`),
-        description: requirePresentString(showroomObject.description, `showrooms[${showroomIndex}].description`),
-        descriptionEn: requirePresentString(showroomObject.descriptionEn, `showrooms[${showroomIndex}].descriptionEn`),
-        previewImageUrl: requireString(showroomObject.previewImageUrl, `showrooms[${showroomIndex}].previewImageUrl`),
-        products: products.map((product, productIndex) => {
-          const productObject = requireObject(product, `showrooms[${showroomIndex}].products[${productIndex}]`)
-          return {
-            id: requirePositiveId(productObject.productId, `showrooms[${showroomIndex}].products[${productIndex}].productId`),
-            code: requireString(productObject.productCode, `showrooms[${showroomIndex}].products[${productIndex}].productCode`),
-            nameCn: requireString(productObject.nameCn, `showrooms[${showroomIndex}].products[${productIndex}].nameCn`),
-            nameEn: requireString(productObject.nameEn, `showrooms[${showroomIndex}].products[${productIndex}].nameEn`),
-            previewImageUrl: requireString(productObject.previewImageUrl, `showrooms[${showroomIndex}].products[${productIndex}].previewImageUrl`),
-            subtitleZh: requireString(productObject.subtitleZh, `showrooms[${showroomIndex}].products[${productIndex}].subtitleZh`),
-            subtitleEn: requireString(productObject.subtitleEn, `showrooms[${showroomIndex}].products[${productIndex}].subtitleEn`),
-            audioZh: requireString(productObject.audioZhUrl, `showrooms[${showroomIndex}].products[${productIndex}].audioZhUrl`),
-            audioEn: requireString(productObject.audioEnUrl, `showrooms[${showroomIndex}].products[${productIndex}].audioEnUrl`)
-          }
-        })
-      }
+export const mapShowroomWebsiteConfig = (payload) => {
+  const data = requireObject(payload, "website-config payload")
+  const showrooms = Array.isArray(data.showrooms) ? data.showrooms : []
+
+  return {
+    company: mapShowroomCompany(data.company, "company"),
+    showrooms: mapShowroomList(showrooms, "showrooms", {
+      includeProductBilingualPublicFields: true
     })
   }
 }
@@ -194,6 +234,40 @@ export const fetchShowroomAppConfigPayload = async ({
   return payload.data
 }
 
+export const fetchShowroomWebsiteConfigPayload = async ({
+  endpoint = SHOWROOM_WEBSITE_CONFIG_ENDPOINT,
+  fetchImpl = globalThis.fetch
+} = {}) => {
+  if (typeof fetchImpl !== "function") {
+    throw new Error("SHOWROOM_WEBSITE_CONFIG_UNAVAILABLE: fetch implementation is required.")
+  }
+
+  const response = await fetchImpl(endpoint, {
+    headers: {
+      Accept: "application/json"
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error(`SHOWROOM_WEBSITE_CONFIG_UNAVAILABLE: request failed with ${response.status}.`)
+  }
+
+  const payload = await response.json()
+
+  if (!payload || payload.code !== 0 || !payload.data) {
+    const code = payload?.code ?? "unknown"
+    const msg =
+      typeof payload?.msg === "string" && payload.msg.trim() !== ""
+        ? payload.msg.trim()
+        : typeof payload?.message === "string" && payload.message.trim() !== ""
+          ? payload.message.trim()
+          : "unknown error"
+    throw new Error(`SHOWROOM_WEBSITE_CONFIG_UNAVAILABLE: backend returned code ${code} (${msg}) from ${endpoint}.`)
+  }
+
+  return payload.data
+}
+
 export const fetchShowroomCompanyDetailPayload = async ({
   endpoint = SHOWROOM_COMPANY_DETAIL_ENDPOINT,
   fetchImpl = globalThis.fetch
@@ -269,6 +343,9 @@ export const fetchShowroomProductDetailPayload = async ({
 
 export const fetchShowroomAppConfig = async (options) =>
   mapShowroomAppConfig(await fetchShowroomAppConfigPayload(options))
+
+export const fetchShowroomWebsiteConfig = async (options) =>
+  mapShowroomWebsiteConfig(await fetchShowroomWebsiteConfigPayload(options))
 
 export const fetchShowroomCompanyDetail = async (options) =>
   mapShowroomCompanyDetail(await fetchShowroomCompanyDetailPayload(options))

@@ -1,0 +1,9 @@
+BDD: Website aggregate adapter is prepared before backend cutover -> Given IntRuoyi has defined a single aggregate showroom contract / When Website updates its interface layer in advance / Then the adapter and tests must align to the aggregate shape without inventing client-side translations or fallbacks.
+BDD: main-agent review blocks non-compliant interface changes -> Given a delegated Website interface patch is returned / When the main agent reviews the change against the aggregate-contract docs / Then any mismatch with the docs must be rejected before completion.
+INFO: Started Website aggregate interface preparation task.
+BDD: one aggregate mapper returns company, showrooms, cards, detail body, and bilingual audio together -> Given IntRuoyi will expose a single anonymous aggregate contract / When Website maps the aggregate payload / Then one mapper result must already contain company detail, showroom order, product cards, product bilingual detail fields, and bilingual audio URLs without a second detail request.
+BDD: pre-adaptation preserves current Website runtime dependencies until cutover is proven -> Given showroom-app and medical-kiosk still consume existing app-config and product-detail flows / When Website prepares the future aggregate adapter / Then the new aggregate entry is added without silently cutting the current runtime path.
+RED: npm test -- --run src/showroom-api.test.js -> FAIL, showroom-api lacks the new single-aggregate exports `mapShowroomWebsiteConfig` and `fetchShowroomWebsiteConfig`, so the aggregate-contract tests fail before implementation.
+GREEN: npm test -- --run src/showroom-api.test.js -> PASS
+GREEN: npm test -- --run src/showroom-api.test.js src/showroom-app.test.js src/medical-kiosk.test.js -> PASS
+INFO: task-closeout-cleanup preview for `20260522-website-aggregate-interface-prep` reported keep=`task.md`,`execution-log.md`, delete=`<none>`, blocked=`<none>`.
