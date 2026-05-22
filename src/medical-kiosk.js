@@ -1,4 +1,5 @@
 import { fetchShowroomWebsiteConfig } from "./showroom-api.js"
+import { resolveCompanyDetailFields } from "./company-detail-fields.js"
 
 const KIOSK_LANGUAGE_STORAGE_KEY = "medical-kiosk-language"
 const KIOSK_LANGUAGES = new Set(["zh", "en"])
@@ -271,7 +272,7 @@ const createCompanyDetailMarkup = (company, state) => {
   const copy = getUiCopy(state.language)
   const companyName = getCompanyName(company, state.language)
   const companySubtitle = getCompanySubtitle(company, state.language)
-  const visibleFields = getVisibleBilingualFields(company.bilingualPublicFields, state.language)
+  const visibleFields = resolveCompanyDetailFields(company, state.language)
 
   return `
     <section class="kiosk-company-detail" data-company-detail-panel>
@@ -690,8 +691,19 @@ export const createMedicalKioskApp = (root, options = {}) => {
   }
 
   const render = () => {
-    updateDerivedState()
-    root.innerHTML = createAppMarkup(state)
+    try {
+      updateDerivedState()
+      root.innerHTML = createAppMarkup(state)
+    } catch (error) {
+      destroyAudio()
+      state.loadState = "error"
+      state.errorMessage = error instanceof Error ? error.message : "SHOWROOM_APP_CONFIG_UNAVAILABLE: unknown error."
+      state.screen = "home"
+      state.selectedProductId = null
+      resetPlaybackState()
+      updateDerivedState()
+      root.innerHTML = createAppMarkup(state)
+    }
   }
 
   const getCurrentScrollTarget = () => {

@@ -1,4 +1,5 @@
 import { fetchShowroomWebsiteConfig } from "./showroom-api.js"
+import { resolveCompanyDetailFields } from "./company-detail-fields.js"
 
 const SHOWROOM_LANGUAGE_STORAGE_KEY = "showroom-language"
 const SHOWROOM_LANGUAGES = new Set(["zh", "en"])
@@ -70,19 +71,6 @@ const persistLanguage = (storage, language) => {
 const getCompanyName = (company, language) => (language === "en" ? company.nameEn : company.name)
 const getCompanySubtitle = (company, language) => (language === "en" ? company.subtitleEn : company.subtitleZh)
 const getCompanyAudioSrc = (company, language) => (language === "en" ? company.audioEn : company.audioZh)
-const getVisibleBilingualFields = (fields, language) => {
-  if (!Array.isArray(fields)) {
-    return []
-  }
-
-  return fields
-    .map((field) => ({
-      label: language === "en" ? field.labelEn : field.labelZh,
-      value: language === "en" ? field.valueEn : field.valueZh
-    }))
-    .filter((field) => typeof field.value === "string" && field.value.trim() !== "")
-}
-
 const getPlaybackMessage = (state) => {
   const copy = getShowroomCopy(state.language)
 
@@ -186,7 +174,7 @@ const createDetailMarkup = (company, state) => {
   const copy = getShowroomCopy(state.language)
   const companyName = getCompanyName(company, state.language)
   const companySubtitle = getCompanySubtitle(company, state.language)
-  const visibleFields = getVisibleBilingualFields(company.bilingualPublicFields, state.language)
+  const visibleFields = resolveCompanyDetailFields(company, state.language)
 
   return `
     <section class="showroom-screen showroom-screen--detail" data-screen="company-detail" data-company-detail>
@@ -344,7 +332,16 @@ export const createShowroomConsumerApp = (root, options = {}) => {
   }
 
   const render = () => {
-    root.innerHTML = createAppMarkup(state)
+    try {
+      root.innerHTML = createAppMarkup(state)
+    } catch (error) {
+      destroyCompanyAudio()
+      state.loadState = "error"
+      state.errorMessage = error instanceof Error ? error.message : "SHOWROOM_APP_CONFIG_UNAVAILABLE: unknown error."
+      state.screen = "landing"
+      resetPlaybackState()
+      root.innerHTML = createAppMarkup(state)
+    }
   }
 
   const ensureCompanyAudio = () => {

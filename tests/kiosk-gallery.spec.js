@@ -41,6 +41,41 @@ const createApiPayload = ({ cardiologyProducts = 36 } = {}) => ({
         valueEn: "Yingtai growth history"
       },
       {
+        fieldCode: "park_introduction",
+        labelZh: "园区介绍",
+        labelEn: "Park Introduction",
+        valueZh: "Three industrial hubs",
+        valueEn: "Three industrial hubs"
+      },
+      {
+        fieldCode: "incubation_platform",
+        labelZh: "孵化平台",
+        labelEn: "Incubation Platform",
+        valueZh: "Platform incubation model",
+        valueEn: ""
+      },
+      {
+        fieldCode: "subsidiary_overview",
+        labelZh: "子公司概览",
+        labelEn: "Subsidiary Overview",
+        valueZh: "Intervention, automation, materials",
+        valueEn: "Intervention, automation, and materials"
+      },
+      {
+        fieldCode: "stock_info",
+        labelZh: "上市信息",
+        labelEn: "Listing Information",
+        valueZh: "No formal listing disclosure",
+        valueEn: "No formal listing disclosure"
+      },
+      {
+        fieldCode: "core_manufacturing_capability",
+        labelZh: "核心制造能力",
+        labelEn: "Core Manufacturing Capability",
+        valueZh: "Precision extrusion and braiding",
+        valueEn: "Precision extrusion and braiding"
+      },
+      {
         fieldCode: "honors_awards",
         labelZh: "荣誉资质",
         labelEn: "Honors and Awards",
@@ -416,10 +451,40 @@ test("clicking the home hero opens company detail loaded from IntRuoyi and retur
 
   await page.locator("[data-home-company-entry-card]").click()
   await expect(page.locator("[data-company-detail-panel]")).toBeVisible()
-  await expect(page.locator("[data-company-detail-field]")).toHaveCount(2)
+  await expect(page.locator("[data-company-detail-field]")).toHaveCount(5)
   await expect(page.locator("[data-company-detail-title]")).toContainText("Yingtai Medical CN")
   await expect(page.locator("body")).toContainText("Yingtai growth timeline")
+  await expect(page.locator("body")).not.toContainText("Honors and Awards")
+  await expect(page.locator("body")).not.toContainText("Core Manufacturing Capability")
 
   await page.locator("[data-company-back]").click()
   await expect(page.locator("[data-home-hero-image]")).toHaveCount(1)
+})
+
+test("root company detail keeps five fixed cards in English and leaves empty card values blank", async ({ page }) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: 0,
+        msg: "",
+        data: createApiPayload({ cardiologyProducts: 1 })
+      })
+    })
+  })
+
+  await page.setViewportSize({ width: 1920, height: 911 })
+  await page.goto("/")
+
+  await page.locator("[data-language-toggle-button]").click()
+  await page.locator("[data-home-company-entry-card]").click()
+
+  await expect(page.locator("[data-company-detail-field]")).toHaveCount(5)
+  await expect(page.locator('[data-company-detail-field-index="0"] dt')).toContainText("Development History")
+  await expect(page.locator('[data-company-detail-field-index="1"] dt')).toContainText("Park Introduction")
+  await expect(page.locator('[data-company-detail-field-index="2"] dt')).toContainText("Incubation Platform")
+  await expect(page.locator('[data-company-detail-field-index="2"] dd')).toHaveText("")
+  await expect(page.locator("body")).not.toContainText("Honors and Awards")
+  await expect(page.locator("body")).not.toContainText("Core Manufacturing Capability")
 })

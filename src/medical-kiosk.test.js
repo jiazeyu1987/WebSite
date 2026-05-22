@@ -14,8 +14,13 @@ const createMappedWebsiteConfig = () => ({
     audioZh: "https://cdn.example.com/company-zh.mp3",
     audioEn: "https://cdn.example.com/company-en.mp3",
     publicFields: [
-      { label: "Milestones", value: "Yingtai growth timeline" },
-      { label: "Awards", value: "National high-tech enterprise" }
+      { label: "发展历程", value: "Yingtai growth timeline" },
+      { label: "园区介绍", value: "Three industrial hubs" },
+      { label: "孵化平台", value: "Platform incubation model" },
+      { label: "子公司概览", value: "Intervention, automation, materials" },
+      { label: "上市信息", value: "No formal listing disclosure" },
+      { label: "核心制造能力", value: "Precision extrusion and braiding" },
+      { label: "荣誉资质", value: "National high-tech enterprise" }
     ],
     bilingualPublicFields: [
       {
@@ -24,6 +29,41 @@ const createMappedWebsiteConfig = () => ({
         labelEn: "Development History",
         valueZh: "Yingtai growth timeline",
         valueEn: "Yingtai growth history"
+      },
+      {
+        fieldCode: "park_introduction",
+        labelZh: "园区介绍",
+        labelEn: "Park Introduction",
+        valueZh: "Three industrial hubs",
+        valueEn: "Three industrial hubs"
+      },
+      {
+        fieldCode: "incubation_platform",
+        labelZh: "孵化平台",
+        labelEn: "Incubation Platform",
+        valueZh: "Platform incubation model",
+        valueEn: ""
+      },
+      {
+        fieldCode: "subsidiary_overview",
+        labelZh: "子公司概览",
+        labelEn: "Subsidiary Overview",
+        valueZh: "Intervention, automation, materials",
+        valueEn: "Intervention, automation, and materials"
+      },
+      {
+        fieldCode: "stock_info",
+        labelZh: "上市信息",
+        labelEn: "Listing Information",
+        valueZh: "No formal listing disclosure",
+        valueEn: "No formal listing disclosure"
+      },
+      {
+        fieldCode: "core_manufacturing_capability",
+        labelZh: "核心制造能力",
+        labelEn: "Core Manufacturing Capability",
+        valueZh: "Precision extrusion and braiding",
+        valueEn: "Precision extrusion and braiding"
       },
       {
         fieldCode: "honors_awards",
@@ -276,6 +316,12 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-company-detail-copy]")?.textContent).toContain("English company narration")
     expect(root.textContent).toContain("Development History")
     expect(root.textContent).toContain("Yingtai growth history")
+    expect(root.querySelectorAll("[data-company-detail-field]")).toHaveLength(5)
+    expect(root.textContent).toContain("Park Introduction")
+    expect(root.textContent).toContain("Incubation Platform")
+    expect(root.textContent).toContain("Listing Information")
+    expect(root.textContent).not.toContain("Honors and Awards")
+    expect(root.textContent).not.toContain("Core Manufacturing Capability")
 
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     await flush()
@@ -408,6 +454,45 @@ describe("createMedicalKioskApp", () => {
     expect(scrollingElement.scrollTop).toBe(240)
     getComputedStyleSpy.mockRestore()
     scrollToSpy.mockRestore()
+  })
+
+  it("renders exactly five fixed company detail cards and keeps an empty English value as an empty body", async () => {
+    const root = mountApp({
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
+    })
+    await flush()
+
+    root.querySelector("[data-language-toggle-button]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    root.querySelector("[data-home-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
+
+    const fields = Array.from(root.querySelectorAll("[data-company-detail-field]"))
+
+    expect(fields).toHaveLength(5)
+    expect(fields.map((field) => field.querySelector("dt")?.textContent?.trim())).toEqual([
+      "Development History",
+      "Park Introduction",
+      "Incubation Platform",
+      "Subsidiary Overview",
+      "Listing Information"
+    ])
+    expect(fields[2]?.querySelector("dd")?.textContent).toBe("")
+    expect(root.textContent).not.toContain("Honors and Awards")
+    expect(root.textContent).not.toContain("Core Manufacturing Capability")
+  })
+
+  it("fails fast when a fixed company detail field entry is missing", async () => {
+    const config = createMappedWebsiteConfig()
+    config.company.bilingualPublicFields = config.company.bilingualPublicFields.filter((field) => field.fieldCode !== "stock_info")
+    const root = mountApp({
+      loadWebsiteConfig: vi.fn().mockResolvedValue(config)
+    })
+    await flush()
+
+    root.querySelector("[data-home-company-entry-card]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+
+    expect(root.querySelector('[data-load-state="error"]')).not.toBeNull()
+    expect(root.textContent).toContain("company.bilingualPublicFields.stock_info is required.")
   })
 
   it("shows an explicit error when the initial app-config load fails", async () => {
