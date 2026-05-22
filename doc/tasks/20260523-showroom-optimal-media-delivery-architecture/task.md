@@ -50,19 +50,26 @@
     - `Website` 是纯展示消费端，只适合消费发布后的 HTTP 合同。
     - `IntRuoyi` 已具备公司 revision、产品 revision、preview asset version、narration version、单一匿名聚合接口等发布基础。
   - 已形成结论：长期最优方案不应是“运行时继续请求 live 聚合，再在前端做媒体增量逻辑”，而应改为“发布时生成不可变 release snapshot，客户端按 release 安装与切换”。
-  - 已新增系统设计文档，分别定义：
-    - 前端：release bootstrap、manifest diff、资产安装、原子切换
-    - 后端：发布装配器、release registry、manifest contract、不可变资源路径
-    - 数据：release、document、asset、release 引用关系
-    - 配置与部署：缓存策略、发布边界、哈希校验、观测指标
-  - 已明确最优同步策略：
-    - 小而频繁的 `release current` 探针
-    - 不可变 manifest 与媒体资源
-    - 客户端按 `assetId + hash` 判定新增/变更
-    - 只有新 release 完整校验通过后才切换 active release
-    - 删除通过新 release 不再引用旧资产并在切换后回收实现
+  - 已定稿 v1 release contract：
+    - `GET /showroom/release/current`
+    - `GET /showroom/release/{releaseId}/manifest`
+    - `GET /showroom/release/{releaseId}/documents/{documentId}.json`
+    - `GET /showroom/assets/{assetId}/{contentHash}`
+  - 已定稿迁移边界：
+    - `GET /showroom/display/website-config` 迁移期仅可作为 active release 的兼容投影，不再允许直接 live 聚合。
+  - 已定稿 v1 文档模型：
+    - 一个 `website-index`
+    - 多个 `product-detail-{productId}`
+  - 已定稿客户端运行边界：
+    - 持久化介质为 `IndexedDB + Cache Storage`
+    - 默认缓存上限 `1 GiB`
+    - 默认本地保留两个已验证 release
+    - 首次安装必须完整校验后才能进入页面
+    - 更新失败时保留当前 active release，不进行未声明的自动回退
+    - 离线运行仅允许在已有 active release 时发生
+    - GC 由激活成功、超额缓存、过期 staging/failed 数据触发
 - Remaining blockers:
-  - 是否允许设备在“已有已验证 release 且本次更新失败”时继续运行旧 release，需要产品/运维明确批准；这是运行策略选择，不应由实现层静默决定。
+  - 无阻塞级开放项；若后续实现阶段发现目标运行环境不支持持久化介质，按系统设计中的 stop condition 停止实现。
 
 ## Final Conclusion
 

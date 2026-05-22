@@ -25,13 +25,13 @@
 
 ## Impact
 
-- Product impact: 决定前台是否继续依赖运行时 live 请求，还是切为发布包驱动的稳定展示模式。
-- Design impact: 影响页面数据到达时序、首屏策略、资源预热策略与版本切换体验。
-- Data impact: 需要把“当前 live 内容”提升为“已发布 release snapshot”，让数据、图片和音频在同一版本边界内被消费。
-- API impact: 需要从单一 `website-config` 运行时聚合，升级为 `release current + manifest + immutable assets` 的发布合同。
-- Test impact: 后续实现必须补充 release 生成、manifest 校验、媒体差量安装、原子切换和删除回收测试。
-- Release impact: 会把前台展示从“实时读 live”变成“显式发布到 release”；发布链路更清晰，但发布流程会更正式。
-- Operations impact: 需要明确设备更新策略、缓存上限、旧版本保留数量和失败告警方式。
+- Product impact: 前台展示从“实时读 live 聚合”切为“消费显式发布的 release snapshot”。
+- Design impact: 页面数据时序、首屏策略、资源预热策略与版本切换体验统一收敛到 release 安装边界。
+- Data impact: 公司、展厅、产品详情、图片和音频都进入同一个 release 版本边界。
+- API impact: 从单一 `website-config` 运行时聚合，升级为 `release current + manifest + immutable assets` 的固定公开合同。
+- Test impact: 必须补齐 release 生成、manifest 校验、媒体安装、原子切换、离线运行和 GC 回收测试。
+- Release impact: 发布流程正式化，需要“装配 release -> 校验 -> 切 current 指针”。
+- Operations impact: 设备更新策略、缓存上限、旧版本保留数量和失败告警方式已成为显式运维配置。
 
 ## Decision
 
@@ -39,15 +39,33 @@
 - Accepted architecture direction:
   - 采用“发布时生成不可变 release snapshot，客户端按 release 安装和切换”的长期目标架构。
   - 不把“运行时请求聚合接口后在前端临时比对媒体增删改”作为长期主架构。
-- Deferred:
-  - 是否允许设备在更新失败时继续运行上一已验证 release，需要明确的产品/运维批准。
-  - 是否需要专门的 `delta manifest` 接口，建议先用完整 manifest + `assetId/hash` 比对；仅当 manifest 体量本身变大时再升级。
+- Accepted v1 contract decisions:
+  - 公开读接口固定为：
+    - `GET /showroom/release/current`
+    - `GET /showroom/release/{releaseId}/manifest`
+    - `GET /showroom/release/{releaseId}/documents/{documentId}.json`
+    - `GET /showroom/assets/{assetId}/{contentHash}`
+  - `GET /showroom/display/website-config` 迁移期仅作为 active release 的兼容投影保留，不再允许直接 live 聚合。
+  - v1 文档模型固定为：
+    - 一个 `website-index`
+    - 多个 `product-detail-{productId}`
+  - 客户端运行边界固定为：
+    - 持久化介质 `IndexedDB + Cache Storage`
+    - 默认缓存上限 `1 GiB`
+    - 默认本地保留两个已验证 release
+    - 首次安装必须完整校验后才能进入页面
+    - 更新失败时保留当前 active release
+    - 离线运行仅允许在已有 active release 时发生
+    - GC 由激活成功、缓存超额、过期 staging/failed 数据触发
+- Deferred non-blocking items:
+  - 是否为超大 release 增加压缩后的 manifest 传输格式。
+  - 是否把 `activeReleaseId` 主动上报到集中运维系统。
 
 ## Required Approvals
 
 - 用户确认以 release-based delivery 作为目标架构
-- 产品/运维确认设备更新失败时的运行策略
-- 若后续要实现缓存持久化和本地安装，需要确认终端可接受的磁盘占用与保留版本数
+- 后续实现阶段确认目标 kiosk 运行环境稳定支持 `IndexedDB + Cache Storage`
+- 后续实现阶段确认默认缓存上限和保留 release 数量符合实际终端硬件容量
 
 ## Downstream Skill Reruns
 
@@ -59,8 +77,10 @@
 
 ## Blockers And Next Action
 
-- Blocker: 当前尚未有显式 release manifest、immutable asset contract 和客户端 active release 安装模型。
-- Impact: 若直接开始实现，只能继续在运行时聚合接口上叠加复杂逻辑，难以达到长期最优边界。
+- Blocker:
+  - 当前仓库仅完成文档定稿，尚未进入后端 release publisher 与前端 installer 实现。
+- Impact:
+  - 若直接宣称能力已交付，将与当前系统实际状态不符。
 - Next action:
-  - 先按本次系统设计文档锁定 release contract
-  - 再拆后端发布装配、前端安装器、测试验证三个实现任务
+  - 按 `D:\ProjectPackage\Website\doc\tasks\20260523-showroom-release-architecture-doc-review\development-plan.md` 拆分后端、前端、验证三个子任务
+  - 在实现期严格执行 `BDD + RED -> GREEN -> REGRESSION`

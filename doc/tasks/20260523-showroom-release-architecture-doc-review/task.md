@@ -46,9 +46,41 @@
 
 ## Current Status
 
-- Status: In Progress
+- Status: Completed
 - Completed work:
   - 已建立本次放行评审任务文档。
   - 已确认上一任务 `20260523-showroom-optimal-media-delivery-architecture` 为 `Completed`，不阻塞本次评审。
+  - 已将 reviewer 指出的阻塞级文档缺口收敛为明确决策并落盘：
+    - release contract 与 `website-config` 的迁移边界已固定
+    - 四个 release 读接口 schema、错误模型、缓存语义、删除/保留规则已固定
+    - v1 文档模型已明确为 `website-index + product-detail-*`
+    - 客户端持久化、配额、首次安装、更新失败、离线运行、旧 release 保留、GC 触发条件已固定
+  - 已新增：
+    - `development-plan.md`
+    - `test-plan.md`
+  - 已同步更新：
+    - architecture task
+    - change doc
+    - review execution log
+  - 已完成独立 reviewer 复审：
+    - 接口清晰度 reviewer 复判 `pass`
+    - 系统自洽 reviewer 复判 `pass`
+    - `BDD + 严格 TDD + Subagent-Driven` 计划 reviewer 复判 `pass`
 - Remaining blockers:
-  - 待子 Agent 独立审查后才能判断是否存在阻塞级文档缺口。
+  - None.
+
+## Final Review Decision
+
+- Decision: Pass
+- Reason:
+  - 文档已足够指导实现“与 `IntRuoyi` 最新发布一致，并尽量保证加载不慢”的目标能力。
+  - 文档与当前系统逻辑已自洽，且明确承接当前 `GET /showroom/display/website-config` 为迁移期兼容投影，而不是并行数据源。
+  - 四个 release 读接口的 schema、错误模型、缓存语义、删除/保留边界已清晰定稿。
+  - 已具备完整的 `BDD + 严格 TDD + Subagent-Driven` 开发计划，包含 milestone、owner、RED/GREEN/REGRESSION、gate、阻塞处理与验证命令。
+
+## Final Verification Result
+
+- PASS: `python -X utf8 C:\Users\BJB110\.codex\skills\change-request-triage\scripts\validate_change_request.py --evidence docs/changes/20260523-optimal-media-delivery-architecture.md`
+- PASS: `python -X utf8 C:\Users\BJB110\.codex\skills\system-design-docs\scripts\validate_system_design.py --root D:\ProjectPackage\Website`
+- PASS: `python -X utf8 C:\Users\BJB110\.codex\skills\task-closeout-cleanup\scripts\task_closeout.py --task-id 20260523-showroom-release-architecture-doc-review --mode preview`
+- INFO: 本轮仅完成文档评审与设计定稿，尚未进入代码实现或代码级测试通过。
