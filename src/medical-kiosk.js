@@ -467,7 +467,6 @@ const createVoicePanelMarkup = (state, lines, hasAudio) => {
       data-voice-panel-expanded="${isExpanded ? "true" : "false"}"
     >
       <div class="kiosk-voice__header">
-        <h2 class="kiosk-voice__title">${copy.voiceTitle}</h2>
         <div class="kiosk-voice__header-tools">
           ${createLanguageToggleMarkup(state.language)}
           ${

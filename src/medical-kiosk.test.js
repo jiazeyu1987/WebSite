@@ -404,6 +404,24 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-voice-panel]")?.getAttribute("data-voice-panel-expanded")).toBe("false")
   })
 
+  it("hides the public narration title text while keeping the voice card controls available", async () => {
+    const root = mountApp({
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
+    })
+    await flush()
+
+    expect(root.querySelector(".kiosk-voice__title")).toBeNull()
+    expect(root.querySelector(".kiosk-voice__header [data-language-toggle-button]")).not.toBeNull()
+    expect(root.querySelector(".kiosk-voice__header [data-speech-mute-toggle]")).not.toBeNull()
+    expect(root.querySelector(".kiosk-voice__header [data-voice-panel-toggle]")).not.toBeNull()
+
+    root.querySelector("[data-language-toggle-button]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
+
+    expect(root.querySelector(".kiosk-voice__title")).toBeNull()
+    expect(root.querySelector("[data-voice-copy]")?.textContent).toContain("English company narration")
+  })
+
   it("keeps the public narration card mounted while toggling its local controls", async () => {
     const root = mountApp({
       loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
