@@ -1,4 +1,4 @@
-import { fetchShowroomAppConfigPayload, mapShowroomAppConfig } from "./showroom-api.js"
+import { fetchShowroomWebsiteConfig } from "./showroom-api.js"
 
 const SHOWROOM_LANGUAGE_STORAGE_KEY = "showroom-language"
 const SHOWROOM_LANGUAGES = new Set(["zh", "en"])
@@ -8,7 +8,7 @@ const SHOWROOM_COPY = {
     shellEyebrow: "Showroom App",
     runtimeEyebrow: "Showroom Runtime",
     loadingTitle: "\u6b63\u5728\u52a0\u8f7d\u516c\u53f8\u5c55\u5385\u6570\u636e",
-    loadingBody: "\u5f53\u524d\u9875\u9762\u53ea\u63a5\u6536 IntRuoyi \u533f\u540d app-config \u6570\u636e\uff0c\u4e0d\u4f1a\u56de\u9000\u5230\u672c\u5730\u5047\u6570\u636e\u3002",
+    loadingBody: "\u5f53\u524d\u9875\u9762\u53ea\u63a5\u6536 IntRuoyi \u5355\u4e00\u805a\u5408\u63a5\u53e3\u6570\u636e\uff0c\u4e0d\u4f1a\u56de\u9000\u5230\u65e7\u63a5\u53e3\u6216\u672c\u5730\u5047\u6570\u636e\u3002",
     errorTitle: "\u516c\u53f8\u5c55\u5385\u6570\u636e\u52a0\u8f7d\u5931\u8d25",
     retryLabel: "\u91cd\u65b0\u52a0\u8f7d",
     languageLabel: "\u8bed\u8a00\u5207\u6362",
@@ -31,7 +31,7 @@ const SHOWROOM_COPY = {
     shellEyebrow: "Showroom App",
     runtimeEyebrow: "Showroom Runtime",
     loadingTitle: "Loading company showroom data",
-    loadingBody: "This page only accepts anonymous IntRuoyi app-config data and does not fall back to local mock data.",
+    loadingBody: "This page only accepts the anonymous IntRuoyi aggregate payload and does not fall back to legacy endpoints or local mock data.",
     errorTitle: "Failed to load company showroom data",
     retryLabel: "Retry load",
     languageLabel: "Language",
@@ -301,10 +301,10 @@ export const createShowroomConsumerApp = (root, options = {}) => {
     throw new Error("Showroom app root element is required.")
   }
 
-  const loadAppConfig =
-    options.loadAppConfig ??
+  const loadWebsiteConfig =
+    options.loadWebsiteConfig ??
     (() =>
-      fetchShowroomAppConfigPayload({
+      fetchShowroomWebsiteConfig({
         endpoint: options.endpoint,
         fetchImpl: options.fetchImpl
       }))
@@ -383,9 +383,9 @@ export const createShowroomConsumerApp = (root, options = {}) => {
     }
   }
 
-  const setReadyState = (payload) => {
+  const setReadyState = (config) => {
     destroyCompanyAudio()
-    state.config = mapShowroomAppConfig(payload)
+    state.config = config
     state.loadState = "ready"
     state.errorMessage = ""
     state.screen = "landing"
@@ -411,7 +411,7 @@ export const createShowroomConsumerApp = (root, options = {}) => {
     render()
 
     try {
-      setReadyState(await loadAppConfig())
+      setReadyState(await loadWebsiteConfig())
     } catch (error) {
       setErrorState(error)
     }

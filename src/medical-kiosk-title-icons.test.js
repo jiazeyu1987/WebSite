@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest"
 import { createMedicalKioskApp } from "./medical-kiosk.js"
 
-const createMappedAppConfig = () => ({
+const createMappedWebsiteConfig = () => ({
   company: {
     id: "1",
     name: "Yingtai Medical CN",
@@ -13,7 +13,7 @@ const createMappedAppConfig = () => ({
     subtitleEn: "English company narration",
     audioZh: "https://cdn.example.com/company-zh.mp3",
     audioEn: "https://cdn.example.com/company-en.mp3",
-    publicFields: []
+    bilingualPublicFields: []
   },
   showrooms: [
     {
@@ -50,7 +50,7 @@ const mountApp = async () => {
   const root = document.getElementById("app")
 
   createMedicalKioskApp(root, {
-    loadAppConfig: () => Promise.resolve(createMappedAppConfig())
+    loadWebsiteConfig: () => Promise.resolve(createMappedWebsiteConfig())
   })
 
   await flush()

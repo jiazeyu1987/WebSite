@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest"
 import {
   SHOWROOM_WEBSITE_CONFIG_ENDPOINT,
   fetchShowroomWebsiteConfig,
-  mapShowroomAppConfig,
   mapShowroomWebsiteConfig
 } from "./showroom-api.js"
 
@@ -48,6 +47,7 @@ const createWebsiteConfigPayload = () => ({
           productCode: "P-101",
           nameCn: "Guidewire System CN",
           nameEn: "Guidewire System",
+          incompleteFlag: false,
           previewImageUrl: "https://cdn.example.com/product-101.png",
           subtitleZh: "Chinese product narration",
           subtitleEn: "English product narration",
@@ -86,6 +86,7 @@ const createWebsiteConfigPayload = () => ({
           productCode: "P-202",
           nameCn: "Stent System CN",
           nameEn: "Stent System",
+          incompleteFlag: true,
           previewImageUrl: "https://cdn.example.com/product-202.png",
           subtitleZh: "Second product Chinese narration",
           subtitleEn: "Second product English narration",
@@ -100,56 +101,6 @@ const createWebsiteConfigPayload = () => ({
               valueEn: "Tier-3 hospitals"
             }
           ]
-        }
-      ]
-    }
-  ]
-})
-
-const createAppConfigPayload = () => ({
-  company: {
-    companyId: 1,
-    name: "Yingtai Medical CN",
-    nameEn: "Yingtai Medical",
-    homeImageUrl: "https://cdn.example.com/company-home.png",
-    subtitleZh: "Company narration in Chinese",
-    subtitleEn: "English company narration",
-    audioZhUrl: "https://cdn.example.com/company-zh.mp3",
-    audioEnUrl: "https://cdn.example.com/company-en.mp3",
-    publicFields: [
-      { label: "Milestones", value: "Yingtai growth timeline" },
-      { label: "Awards", value: "National high-tech enterprise" }
-    ],
-    bilingualPublicFields: [
-      {
-        fieldCode: "development_history",
-        labelZh: "发展历程",
-        labelEn: "Development History",
-        valueZh: "Yingtai growth timeline",
-        valueEn: "Yingtai growth history"
-      }
-    ]
-  },
-  showrooms: [
-    {
-      hallId: 10,
-      hallCode: "CARDIOLOGY",
-      name: "Cardiology Hall CN",
-      nameEn: "Cardiology Hall",
-      description: "Chinese hall description",
-      descriptionEn: "English hall description",
-      previewImageUrl: "https://cdn.example.com/hall-cardiology.png",
-      products: [
-        {
-          productId: 101,
-          productCode: "P-101",
-          nameCn: "Guidewire System CN",
-          nameEn: "Guidewire System",
-          previewImageUrl: "https://cdn.example.com/product-101.png",
-          subtitleZh: "Chinese product narration",
-          subtitleEn: "English product narration",
-          audioZhUrl: "https://cdn.example.com/product-101-zh.mp3",
-          audioEnUrl: "https://cdn.example.com/product-101-en.mp3"
         }
       ]
     }
@@ -192,6 +143,7 @@ describe("mapShowroomWebsiteConfig", () => {
       code: "P-101",
       nameCn: "Guidewire System CN",
       nameEn: "Guidewire System",
+      incompleteFlag: false,
       previewImageUrl: "https://cdn.example.com/product-101.png",
       subtitleZh: "Chinese product narration",
       subtitleEn: "English product narration",
@@ -253,18 +205,5 @@ describe("fetchShowroomWebsiteConfig", () => {
       }
     })
     expect(mapped.showrooms[0].products[0].bilingualPublicFields[0].fieldCode).toBe("target_market")
-  })
-})
-
-describe("mapShowroomAppConfig", () => {
-  it("keeps the current app-config mapper behavior intact before runtime cutover", () => {
-    const mapped = mapShowroomAppConfig(createAppConfigPayload())
-
-    expect(mapped.company.id).toBe("1")
-    expect(mapped.company.publicFields).toEqual([
-      { label: "Milestones", value: "Yingtai growth timeline" },
-      { label: "Awards", value: "National high-tech enterprise" }
-    ])
-    expect(mapped.showrooms[0].products[0].nameEn).toBe("Guidewire System")
   })
 })

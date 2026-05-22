@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { mapShowroomWebsiteConfig } from "./showroom-api.js"
 import { createShowroomConsumerApp } from "./showroom-app.js"
 
-const createApiPayload = () => ({
+const createWebsiteConfigPayload = () => ({
   company: {
     companyId: 1,
     name: "\u76c8\u6cf0\u533b\u7597",
@@ -42,6 +43,8 @@ const createApiPayload = () => ({
   },
   showrooms: []
 })
+
+const createMappedWebsiteConfig = () => mapShowroomWebsiteConfig(createWebsiteConfigPayload())
 
 const createAudioController = (src = "") => {
   const listeners = new Map()
@@ -99,14 +102,14 @@ describe("createShowroomConsumerApp", () => {
     localStorage.clear()
   })
 
-  it("loads remote app-config data and renders exactly one company entry card on /showroom", async () => {
+  it("loads remote aggregate data and renders exactly one company entry card on /showroom", async () => {
     const root = document.getElementById("app")
-    const loadAppConfig = vi.fn().mockResolvedValue(createApiPayload())
+    const loadWebsiteConfig = vi.fn().mockResolvedValue(createMappedWebsiteConfig())
 
-    createShowroomConsumerApp(root, { loadAppConfig })
+    createShowroomConsumerApp(root, { loadWebsiteConfig })
     await flush()
 
-    expect(loadAppConfig).toHaveBeenCalledTimes(1)
+    expect(loadWebsiteConfig).toHaveBeenCalledTimes(1)
     expect(root.querySelector('[data-load-state="ready"]')).not.toBeNull()
     expect(root.querySelector('[data-screen="company-landing"]')).not.toBeNull()
     expect(root.querySelectorAll("[data-company-entry-card]")).toHaveLength(1)
@@ -118,8 +121,8 @@ describe("createShowroomConsumerApp", () => {
   })
 
   it("switches showroom content to English and restores the persisted language on remount", async () => {
-    const loadAppConfig = vi.fn().mockResolvedValue(createApiPayload())
-    const root = mountApp({ loadAppConfig, createAudio: vi.fn(() => createAudioController()) })
+    const loadWebsiteConfig = vi.fn().mockResolvedValue(createMappedWebsiteConfig())
+    const root = mountApp({ loadWebsiteConfig, createAudio: vi.fn(() => createAudioController()) })
     await flush()
 
     root.querySelector('[data-language-option="en"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
@@ -137,7 +140,7 @@ describe("createShowroomConsumerApp", () => {
     expect(root.textContent).toContain("Development History")
     expect(root.textContent).toContain("Yingtai growth history")
 
-    const remountedRoot = mountApp({ loadAppConfig, createAudio: vi.fn(() => createAudioController()) })
+    const remountedRoot = mountApp({ loadWebsiteConfig, createAudio: vi.fn(() => createAudioController()) })
     await flush()
 
     expect(remountedRoot.querySelector('[data-language-option="en"]')?.getAttribute("aria-pressed")).toBe("true")
@@ -148,7 +151,7 @@ describe("createShowroomConsumerApp", () => {
   it("switches the active company audio source when the showroom language changes", async () => {
     const audioFactory = createAudioFactoryStub()
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createApiPayload()),
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig()),
       createAudio: audioFactory.factory
     })
     await flush()
@@ -173,7 +176,7 @@ describe("createShowroomConsumerApp", () => {
 
   it("renders the company detail summary and play action before the public field list", async () => {
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createApiPayload()),
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig()),
       createAudio: vi.fn(() => createAudioController())
     })
     await flush()
@@ -194,7 +197,7 @@ describe("createShowroomConsumerApp", () => {
 
   it("renders a dedicated detail action bar that groups back and play actions", async () => {
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createApiPayload()),
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig()),
       createAudio: vi.fn(() => createAudioController())
     })
     await flush()
@@ -212,7 +215,7 @@ describe("createShowroomConsumerApp", () => {
 
   it("renders stable field label/value markers for the company public fields", async () => {
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createApiPayload()),
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig()),
       createAudio: vi.fn(() => createAudioController())
     })
     await flush()
@@ -227,11 +230,9 @@ describe("createShowroomConsumerApp", () => {
 
   it("shows an explicit error state when company.bilingualPublicFields is missing", async () => {
     const root = document.getElementById("app")
-    const payload = createApiPayload()
-    delete payload.company.bilingualPublicFields
 
     createShowroomConsumerApp(root, {
-      loadAppConfig: vi.fn().mockResolvedValue(payload)
+      loadWebsiteConfig: vi.fn().mockRejectedValue(new Error("company.bilingualPublicFields is required."))
     })
     await flush()
 

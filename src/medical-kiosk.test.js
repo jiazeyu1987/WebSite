@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { createMedicalKioskApp } from "./medical-kiosk.js"
 
-const createMappedAppConfig = () => ({
+const createMappedWebsiteConfig = () => ({
   company: {
     id: "1",
     name: "Yingtai Medical CN",
@@ -47,13 +47,30 @@ const createMappedAppConfig = () => ({
         {
           id: "101",
           code: "P-101",
+          incompleteFlag: false,
           nameCn: "Guidewire System CN",
           nameEn: "Guidewire System",
           previewImageUrl: "https://cdn.example.com/product-101.png",
           subtitleZh: "Chinese product narration",
           subtitleEn: "English product narration",
           audioZh: "https://cdn.example.com/product-101-zh.mp3",
-          audioEn: "https://cdn.example.com/product-101-en.mp3"
+          audioEn: "https://cdn.example.com/product-101-en.mp3",
+          bilingualPublicFields: [
+            {
+              fieldCode: "target_market",
+              labelZh: "目标市场",
+              labelEn: "Target Market",
+              valueZh: "心内",
+              valueEn: "Cardiology"
+            },
+            {
+              fieldCode: "core_selling_points",
+              labelZh: "核心卖点",
+              labelEn: "Core Selling Points",
+              valueZh: "更顺滑",
+              valueEn: "Smoother delivery"
+            }
+          ]
         }
       ]
     },
@@ -69,38 +86,32 @@ const createMappedAppConfig = () => ({
         {
           id: "201",
           code: "P-201",
+          incompleteFlag: false,
           nameCn: "Catheter System CN",
           nameEn: "Catheter System",
           previewImageUrl: "https://cdn.example.com/product-201.png",
           subtitleZh: "Chinese product narration two",
           subtitleEn: "English product narration two",
           audioZh: "https://cdn.example.com/product-201-zh.mp3",
-          audioEn: "https://cdn.example.com/product-201-en.mp3"
+          audioEn: "https://cdn.example.com/product-201-en.mp3",
+          bilingualPublicFields: [
+            {
+              fieldCode: "target_market",
+              labelZh: "目标市场",
+              labelEn: "Target Market",
+              valueZh: "神内",
+              valueEn: "Neurology"
+            },
+            {
+              fieldCode: "core_selling_points",
+              labelZh: "核心卖点",
+              labelEn: "Core Selling Points",
+              valueZh: "更稳定",
+              valueEn: "More stable support"
+            }
+          ]
         }
       ]
-    }
-  ]
-})
-
-const createMappedProductDetail = (productId) => ({
-  id: String(productId),
-  nameCn: productId === "101" ? "Guidewire System CN" : "Catheter System CN",
-  nameEn: productId === "101" ? "Guidewire System" : "Catheter System",
-  previewImageUrl: `https://cdn.example.com/product-${productId}.png`,
-  bilingualPublicFields: [
-    {
-      fieldCode: "target_market",
-      labelZh: "目标市场",
-      labelEn: "Target Market",
-      valueZh: productId === "101" ? "心内" : "神内",
-      valueEn: productId === "101" ? "Cardiology" : "Neurology"
-    },
-    {
-      fieldCode: "core_selling_points",
-      labelZh: "核心卖点",
-      labelEn: "Core Selling Points",
-      valueZh: productId === "101" ? "更顺滑" : "更稳定",
-      valueEn: productId === "101" ? "Smoother delivery" : "More stable support"
     }
   ]
 })
@@ -181,13 +192,13 @@ describe("createMedicalKioskApp", () => {
   })
 
   it("renders backend halls and switches halls by arrows", async () => {
-    const loadAppConfig = vi.fn().mockResolvedValue(createMappedAppConfig())
+    const loadWebsiteConfig = vi.fn().mockResolvedValue(createMappedWebsiteConfig())
     const root = mountApp({
-      loadAppConfig
+      loadWebsiteConfig
     })
     await flush()
 
-    expect(loadAppConfig).toHaveBeenCalledTimes(1)
+    expect(loadWebsiteConfig).toHaveBeenCalledTimes(1)
     expect(root.querySelector('[data-reference-layout="medical-kiosk"]')).not.toBeNull()
     expect(root.querySelector("[data-mode-option]")).toBeNull()
     expect(root.querySelector(".kiosk-header [data-language-toggle-button]")).toBeNull()
@@ -211,7 +222,7 @@ describe("createMedicalKioskApp", () => {
 
   it("shows drag feedback during a horizontal pointer swipe and clears it on cancel", async () => {
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig())
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
     })
     await flush()
 
@@ -234,7 +245,7 @@ describe("createMedicalKioskApp", () => {
 
   it("does not switch halls for a predominantly vertical pointer drag", async () => {
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig())
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
     })
     await flush()
 
@@ -252,7 +263,7 @@ describe("createMedicalKioskApp", () => {
   it("opens company detail from backend config and plays the backend company audio in English", async () => {
     const audioFactory = createAudioFactoryStub()
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig()),
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig()),
       createAudio: audioFactory.factory
     })
     await flush()
@@ -285,10 +296,8 @@ describe("createMedicalKioskApp", () => {
 
   it("loads product detail from the backend, renders mapped fields, and plays English product audio", async () => {
     const audioFactory = createAudioFactoryStub()
-    const loadProductDetail = vi.fn((productId) => Promise.resolve(createMappedProductDetail(productId)))
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig()),
-      loadProductDetail,
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig()),
       createAudio: audioFactory.factory
     })
     await flush()
@@ -299,7 +308,6 @@ describe("createMedicalKioskApp", () => {
     await flush()
     await flush()
 
-    expect(loadProductDetail).toHaveBeenCalledWith("101")
     expect(root.querySelector("[data-product-detail-id]")).not.toBeNull()
     expect(root.querySelector("[data-product-detail-title]")?.textContent).toContain("Guidewire System")
     expect(root.querySelectorAll("[data-product-description-line]")).toHaveLength(2)
@@ -318,7 +326,7 @@ describe("createMedicalKioskApp", () => {
 
   it("renders a compact voice panel state that can expand and collapse on demand", async () => {
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig())
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
     })
     await flush()
 
@@ -352,10 +360,8 @@ describe("createMedicalKioskApp", () => {
       return originalGetComputedStyle(element)
     })
 
-    const loadProductDetail = vi.fn((productId) => Promise.resolve(createMappedProductDetail(productId)))
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig()),
-      loadProductDetail
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
     })
     await flush()
 
@@ -389,7 +395,7 @@ describe("createMedicalKioskApp", () => {
     })
 
     const root = mountApp({
-      loadAppConfig: vi.fn().mockResolvedValue(createMappedAppConfig())
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
     })
     await flush()
 
@@ -407,18 +413,18 @@ describe("createMedicalKioskApp", () => {
 
   it("shows an explicit error when the initial app-config load fails", async () => {
     const root = mountApp({
-      loadAppConfig: vi.fn().mockRejectedValue(new Error("SHOWROOM_APP_CONFIG_UNAVAILABLE: request failed with 503."))
+      loadWebsiteConfig: vi.fn().mockRejectedValue(new Error("SHOWROOM_WEBSITE_CONFIG_UNAVAILABLE: request failed with 503."))
     })
     await flush()
 
     expect(root.querySelector('[data-load-state="error"]')).not.toBeNull()
     expect(root.querySelector('[data-screen="kiosk-error"]')).not.toBeNull()
-    expect(root.textContent).toContain("SHOWROOM_APP_CONFIG_UNAVAILABLE: request failed with 503.")
+    expect(root.textContent).toContain("SHOWROOM_WEBSITE_CONFIG_UNAVAILABLE: request failed with 503.")
   })
 
   it("persists the selected English language across remounts", async () => {
-    const loadAppConfig = vi.fn().mockResolvedValue(createMappedAppConfig())
-    const root = mountApp({ loadAppConfig })
+    const loadWebsiteConfig = vi.fn().mockResolvedValue(createMappedWebsiteConfig())
+    const root = mountApp({ loadWebsiteConfig })
     await flush()
 
     root.querySelector("[data-language-toggle-button]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
@@ -427,7 +433,7 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-active-category-title]")?.textContent).toContain("Home")
     expect(root.querySelector("[data-voice-copy]")?.textContent).toContain("English company narration")
 
-    const remountedRoot = mountApp({ loadAppConfig })
+    const remountedRoot = mountApp({ loadWebsiteConfig })
     await flush()
 
     expect(remountedRoot.querySelector("[data-language-toggle-button]")?.getAttribute("data-language-current")).toBe("en")

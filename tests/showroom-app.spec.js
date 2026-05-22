@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test"
+﻿import { expect, test } from "@playwright/test"
 
-const createApiPayload = () => ({
+const createWebsiteConfigPayload = () => ({
   company: {
     companyId: 1,
     name: "\u76c8\u6cf0\u533b\u7597",
@@ -87,14 +87,14 @@ test("keeps the kiosk homepage on root and renders the bilingual showroom compan
     window.Audio = MockAudio
   })
 
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         code: 0,
         msg: "",
-        data: createApiPayload()
+        data: createWebsiteConfigPayload()
       })
     })
   })
@@ -134,14 +134,14 @@ test("keeps the kiosk homepage on root and renders the bilingual showroom compan
 })
 
 test("mobile showroom landing uses wide controls for language switch and company entry", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         code: 0,
         msg: "",
-        data: createApiPayload()
+        data: createWebsiteConfigPayload()
       })
     })
   })
@@ -165,14 +165,14 @@ test("mobile showroom landing uses wide controls for language switch and company
 })
 
 test("mobile showroom stays in a vertical-scroll-only layout without horizontal overflow", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         code: 0,
         msg: "",
-        data: createApiPayload()
+        data: createWebsiteConfigPayload()
       })
     })
   })
@@ -199,14 +199,14 @@ test("mobile showroom stays in a vertical-scroll-only layout without horizontal 
 })
 
 test("mobile showroom detail keeps image title and play action in the first screen", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         code: 0,
         msg: "",
-        data: createApiPayload()
+        data: createWebsiteConfigPayload()
       })
     })
   })
@@ -245,14 +245,14 @@ test("mobile showroom detail keeps image title and play action in the first scre
 })
 
 test("mobile showroom detail keeps the action bar visible while scrolling fields", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         code: 0,
         msg: "",
-        data: createApiPayload()
+        data: createWebsiteConfigPayload()
       })
     })
   })
@@ -272,14 +272,14 @@ test("mobile showroom detail keeps the action bar visible while scrolling fields
 })
 
 test("mobile showroom detail keeps the action bar in the lower thumb zone", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         code: 0,
         msg: "",
-        data: createApiPayload()
+        data: createWebsiteConfigPayload()
       })
     })
   })
@@ -311,14 +311,14 @@ test("mobile showroom detail keeps the action bar in the lower thumb zone", asyn
 })
 
 test("mobile showroom detail presents public fields as separated cards", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         code: 0,
         msg: "",
-        data: createApiPayload()
+        data: createWebsiteConfigPayload()
       })
     })
   })
@@ -358,8 +358,8 @@ test("mobile showroom detail presents public fields as separated cards", async (
 })
 
 test("fails fast on /showroom when company.bilingualPublicFields is missing from the backend contract", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
-    const payload = createApiPayload()
+  await page.route("**/showroom/display/website-config", async (route) => {
+    const payload = createWebsiteConfigPayload()
     delete payload.company.bilingualPublicFields
 
     await route.fulfill({

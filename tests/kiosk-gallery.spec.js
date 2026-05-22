@@ -1,15 +1,25 @@
-import { expect, test } from "@playwright/test"
+﻿import { expect, test } from "@playwright/test"
 
 const createProduct = (index) => ({
   productId: 100 + index,
   productCode: `P-${100 + index}`,
+  incompleteFlag: false,
   nameCn: `Guidewire System CN ${index}`,
   nameEn: `Guidewire System ${index}`,
   previewImageUrl: `https://cdn.example.com/products/guidewire-${index}.png`,
   subtitleZh: `Chinese product narration ${index}`,
   subtitleEn: `English product narration ${index}`,
   audioZhUrl: `https://cdn.example.com/products/guidewire-${index}-zh.mp3`,
-  audioEnUrl: `https://cdn.example.com/products/guidewire-${index}-en.mp3`
+  audioEnUrl: `https://cdn.example.com/products/guidewire-${index}-en.mp3`,
+  bilingualPublicFields: [
+    {
+      fieldCode: "target_market",
+      labelZh: "目标市场",
+      labelEn: "Target Market",
+      valueZh: `市场 ${index}`,
+      valueEn: `Market ${index}`
+    }
+  ]
 })
 
 const createApiPayload = ({ cardiologyProducts = 36 } = {}) => ({
@@ -22,9 +32,21 @@ const createApiPayload = ({ cardiologyProducts = 36 } = {}) => ({
     subtitleEn: "English company narration",
     audioZhUrl: "https://cdn.example.com/company-zh.mp3",
     audioEnUrl: "https://cdn.example.com/company-en.mp3",
-    publicFields: [
-      { label: "Milestones", value: "Yingtai growth timeline" },
-      { label: "Awards", value: "National high-tech enterprise" }
+    bilingualPublicFields: [
+      {
+        fieldCode: "development_history",
+        labelZh: "发展历程",
+        labelEn: "Development History",
+        valueZh: "Yingtai growth timeline",
+        valueEn: "Yingtai growth history"
+      },
+      {
+        fieldCode: "honors_awards",
+        labelZh: "荣誉资质",
+        labelEn: "Honors and Awards",
+        valueZh: "National high-tech enterprise",
+        valueEn: "National high-tech enterprise"
+      }
     ]
   },
   showrooms: [
@@ -65,7 +87,7 @@ const createProductDetailPayload = (productId = 101) => ({
 })
 
 test("gallery arrows switch showrooms and the card region scrolls internally", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -151,7 +173,7 @@ test("gallery arrows switch showrooms and the card region scrolls internally", a
 })
 
 test("mobile title strip shows swipe guidance and slot progress", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -182,7 +204,7 @@ test("mobile title strip shows swipe guidance and slot progress", async ({ page 
 })
 
 test("mobile pointer swipe shows drag feedback, ignores vertical drags, and clears on cancel", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -271,7 +293,7 @@ test("mobile pointer swipe shows drag feedback, ignores vertical drags, and clea
 })
 
 test("mobile portrait voice panel starts compact and can expand on demand", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -306,7 +328,7 @@ test("mobile portrait voice panel starts compact and can expand on demand", asyn
 })
 
 test("returning from product detail restores the desktop gallery internal scroll position", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -356,7 +378,7 @@ test("returning from product detail restores the desktop gallery internal scroll
 })
 
 test("returning from product detail restores the mobile document scroll position", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -405,7 +427,7 @@ test("returning from product detail restores the mobile document scroll position
 })
 
 test("clicking the home hero opens company detail loaded from IntRuoyi and returns back home", async ({ page }) => {
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-const createAppConfigPayload = () => ({
+const createWebsiteConfigPayload = () => ({
   company: {
     companyId: 1,
     name: "Yingtai Medical CN",
@@ -36,44 +36,32 @@ const createAppConfigPayload = () => ({
         {
           productId: 101,
           productCode: "P-101",
+          incompleteFlag: false,
           nameCn: "Guidewire System CN",
           nameEn: "Guidewire System",
           previewImageUrl: "https://cdn.example.com/product-101.png",
           subtitleZh: "Chinese product narration",
           subtitleEn: "English product narration",
           audioZhUrl: "https://cdn.example.com/product-101-zh.mp3",
-          audioEnUrl: "https://cdn.example.com/product-101-en.mp3"
+          audioEnUrl: "https://cdn.example.com/product-101-en.mp3",
+          bilingualPublicFields: [
+            {
+              fieldCode: "target_market",
+              labelZh: "目标市场",
+              labelEn: "Target Market",
+              valueZh: "心内",
+              valueEn: "Cardiology"
+            },
+            {
+              fieldCode: "core_selling_points",
+              labelZh: "核心卖点",
+              labelEn: "Core Selling Points",
+              valueZh: "更顺滑",
+              valueEn: "Smoother delivery"
+            }
+          ]
         }
       ]
-    }
-  ]
-})
-
-const createProductDetailPayload = () => ({
-  productCard: {
-    id: 101,
-    nameCn: "Guidewire System CN",
-    nameEn: "Guidewire System",
-    previewImageUrl: "https://cdn.example.com/product-101.png"
-  },
-  publicProductFields: [
-    { label: "Target market", value: "Cardiology" },
-    { label: "Registration", value: "Cert-A" }
-  ],
-  bilingualPublicFields: [
-    {
-      fieldCode: "target_market",
-      labelZh: "目标市场",
-      labelEn: "Target Market",
-      valueZh: "心内",
-      valueEn: "Cardiology"
-    },
-    {
-      fieldCode: "core_selling_points",
-      labelZh: "核心卖点",
-      labelEn: "Core Selling Points",
-      valueZh: "更顺滑",
-      valueEn: "Smoother delivery"
     }
   ]
 })
@@ -110,26 +98,14 @@ test("opens a kiosk product detail page in English, keeps one voice-header toggl
     window.Audio = MockAudio
   })
 
-  await page.route("**/showroom/display/app-config", async (route) => {
+  await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         code: 0,
         msg: "",
-        data: createAppConfigPayload()
-      })
-    })
-  })
-
-  await page.route("**/showroom/display/product/101", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        code: 0,
-        msg: "",
-        data: createProductDetailPayload()
+        data: createWebsiteConfigPayload()
       })
     })
   })

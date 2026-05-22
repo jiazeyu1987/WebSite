@@ -1,4 +1,4 @@
-import { fetchShowroomAppConfig, fetchShowroomProductDetail } from "./showroom-api.js"
+import { fetchShowroomWebsiteConfig } from "./showroom-api.js"
 
 const KIOSK_LANGUAGE_STORAGE_KEY = "medical-kiosk-language"
 const KIOSK_LANGUAGES = new Set(["zh", "en"])
@@ -25,7 +25,7 @@ const KIOSK_COPY = {
     previousHallAria: "切换到上一个展厅",
     nextHallAria: "切换到下一个展厅",
     loadingTitle: "正在加载展厅数据",
-    loadingBody: "当前页面只从 IntRuoyi 读取公开展示数据，不使用本地业务假数据。",
+    loadingBody: "当前页面只从 IntRuoyi 单一聚合接口读取公开展示数据，不使用旧接口或本地业务假数据。",
     errorTitle: "展厅数据加载失败",
     retryLabel: "重新加载",
     companyDetailEyebrow: "公司详情",
@@ -65,7 +65,7 @@ const KIOSK_COPY = {
     previousHallAria: "Switch to previous hall",
     nextHallAria: "Switch to next hall",
     loadingTitle: "Loading showroom data",
-    loadingBody: "This page reads public showroom data from IntRuoyi only and does not use local business placeholders.",
+    loadingBody: "This page reads public showroom data from the IntRuoyi aggregate interface only and does not use legacy endpoints or local business placeholders.",
     errorTitle: "Failed to load showroom data",
     retryLabel: "Reload",
     companyDetailEyebrow: "Company Detail",
@@ -322,44 +322,11 @@ const createGalleryMarkup = (hall, language) => `
 
 const createProductDetailMarkup = (hall, product, state) => {
   const copy = getUiCopy(state.language)
-  const detail = state.productDetailData
+  const detail = product
   const productName = getProductName(product, state.language)
   const productSubtitle = getProductSubtitle(product, state.language)
   const hallTitle = getHallName(hall, state.language)
   const visibleFields = getVisibleBilingualFields(detail?.bilingualPublicFields, state.language)
-
-  if (state.productDetailLoadState === "loading") {
-    return `
-      <section class="kiosk-detail" data-product-detail-loading>
-        <header class="kiosk-detail__header">
-          <button class="kiosk-detail__back" type="button" data-back-to-gallery>${copy.productBackLabel}</button>
-        </header>
-        <article class="kiosk-detail__hero">
-          <div class="kiosk-detail__copy">
-            <p class="kiosk-detail__eyebrow">${copy.productSummaryEyebrow}</p>
-            <h2 class="kiosk-detail__title">${copy.productLoadingTitle}</h2>
-          </div>
-        </article>
-      </section>
-    `
-  }
-
-  if (state.productDetailLoadState === "error") {
-    return `
-      <section class="kiosk-detail" data-product-detail-error>
-        <header class="kiosk-detail__header">
-          <button class="kiosk-detail__back" type="button" data-back-to-gallery>${copy.productBackLabel}</button>
-          <p class="kiosk-detail__state">${state.productDetailErrorMessage}</p>
-        </header>
-        <article class="kiosk-detail__hero">
-          <div class="kiosk-detail__copy">
-            <p class="kiosk-detail__eyebrow">${copy.productSummaryEyebrow}</p>
-            <h2 class="kiosk-detail__title">${copy.productErrorTitle}</h2>
-          </div>
-        </article>
-      </section>
-    `
-  }
 
   return `
     <section class="kiosk-detail" data-product-detail-id="${product.id}">
@@ -621,18 +588,11 @@ export const createMedicalKioskApp = (root, options = {}) => {
 
   const storage = options.storage ?? root.ownerDocument?.defaultView?.localStorage ?? null
   const createAudio = resolveAudioFactory(options)
-  const loadAppConfig =
-    options.loadAppConfig ??
+  const loadWebsiteConfig =
+    options.loadWebsiteConfig ??
     (() =>
-      fetchShowroomAppConfig({
-        endpoint: options.appConfigEndpoint,
-        fetchImpl: options.fetchImpl
-      }))
-  const loadProductDetail =
-    options.loadProductDetail ??
-    ((productId) =>
-      fetchShowroomProductDetail({
-        productId,
+      fetchShowroomWebsiteConfig({
+        endpoint: options.websiteConfigEndpoint,
         fetchImpl: options.fetchImpl
       }))
 
@@ -658,9 +618,6 @@ export const createMedicalKioskApp = (root, options = {}) => {
     activeCategoryId: "home",
     screen: "home",
     selectedProductId: null,
-    productDetailLoadState: "idle",
-    productDetailErrorMessage: "",
-    productDetailData: null,
     isMuted: false,
     isVoicePanelExpanded: false,
     playbackStatus: "idle",
@@ -940,9 +897,6 @@ export const createMedicalKioskApp = (root, options = {}) => {
     destroyAudio()
     resetPlaybackState()
     state.selectedProductId = null
-    state.productDetailLoadState = "idle"
-    state.productDetailErrorMessage = ""
-    state.productDetailData = null
   }
 
   const load = async () => {
@@ -956,7 +910,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     render()
 
     try {
-      state.config = await loadAppConfig()
+      state.config = await loadWebsiteConfig()
       state.loadState = "ready"
       render()
     } catch (error) {
@@ -993,7 +947,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     restoreBrowseScrollPosition()
   }
 
-  const openProductDetail = async (productId) => {
+  const openProductDetail = (productId) => {
     if (state.loadState !== "ready" || !state.config) {
       return
     }
@@ -1011,21 +965,7 @@ export const createMedicalKioskApp = (root, options = {}) => {
     resetPlaybackState()
     state.screen = "product"
     state.selectedProductId = product.id
-    state.productDetailLoadState = "loading"
-    state.productDetailErrorMessage = ""
-    state.productDetailData = null
     render()
-
-    try {
-      state.productDetailData = await loadProductDetail(product.id)
-      state.productDetailLoadState = "ready"
-      render()
-    } catch (error) {
-      state.productDetailLoadState = "error"
-      state.productDetailErrorMessage =
-        error instanceof Error ? error.message : "SHOWROOM_PRODUCT_DETAIL_UNAVAILABLE: unknown error."
-      render()
-    }
   }
 
   const backToGallery = () => {
@@ -1038,9 +978,6 @@ export const createMedicalKioskApp = (root, options = {}) => {
     state.screen = state.activeHallSlot === 0 ? "home" : "gallery"
     state.isVoicePanelExpanded = false
     state.selectedProductId = null
-    state.productDetailLoadState = "idle"
-    state.productDetailErrorMessage = ""
-    state.productDetailData = null
     render()
     restoreBrowseScrollPosition()
   }
