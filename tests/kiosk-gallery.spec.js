@@ -172,7 +172,7 @@ test("gallery arrows switch showrooms and the card region scrolls internally", a
   await expect(page.locator("[data-product-card]")).toHaveCount(0)
 })
 
-test("mobile title strip shows swipe guidance and slot progress", async ({ page }) => {
+test("mobile title strip hides swipe guidance and slot progress", async ({ page }) => {
   await page.route("**/showroom/display/website-config", async (route) => {
     await route.fulfill({
       status: 200,
@@ -191,16 +191,14 @@ test("mobile title strip shows swipe guidance and slot progress", async ({ page 
   const swipeHint = page.locator("[data-swipe-hint]")
   const swipeProgress = page.locator("[data-swipe-progress]")
 
-  await expect(swipeHint).toBeVisible()
-  await expect(swipeHint).toContainText("左右滑动或点击切换展厅")
-  await expect(swipeProgress).toHaveAttribute("data-current-slot", "1")
-  await expect(swipeProgress).toHaveAttribute("data-total-slots", "3")
+  await expect(swipeHint).toHaveCount(0)
+  await expect(swipeProgress).toHaveCount(0)
 
   await page.locator('[data-shift-category="1"]').click()
 
   await expect(page.locator("[data-swipe-header]")).toHaveAttribute("data-active-category-id", "cardiology")
-  await expect(swipeProgress).toHaveAttribute("data-current-slot", "2")
-  await expect(swipeProgress).toHaveAttribute("data-total-slots", "3")
+  await expect(swipeHint).toHaveCount(0)
+  await expect(swipeProgress).toHaveCount(0)
 })
 
 test("mobile pointer swipe shows drag feedback, ignores vertical drags, and clears on cancel", async ({ page }) => {

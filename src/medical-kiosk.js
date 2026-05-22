@@ -439,20 +439,6 @@ const createVoicePanelMarkup = (state, lines, hasAudio) => {
   `
 }
 
-const createSwipeProgressMarkup = (copy, currentSlot, totalSlots) => `
-  <div class="kiosk-title-strip__meta">
-    <span class="kiosk-title-strip__hint" data-swipe-hint>${copy.swipeHeaderHint}</span>
-    <span
-      class="kiosk-title-strip__progress"
-      data-swipe-progress
-      data-current-slot="${currentSlot}"
-      data-total-slots="${totalSlots}"
-    >
-      ${currentSlot} / ${totalSlots}
-    </span>
-  </div>
-`
-
 const createLoadingMarkup = (language) => {
   const copy = getUiCopy(language)
 
@@ -489,8 +475,6 @@ const createReadyMarkup = (state) => {
   const product = hall?.products.find((item) => item.id === state.selectedProductId) ?? null
   const activeCategoryTitle = hall ? getHallName(hall, state.language) : copy.homeTitle
   const activeIconSrc = hall ? getHallIconSrc(hall) : null
-  const totalSlots = state.config.showrooms.length + 1
-  const currentSlot = state.activeHallSlot + 1
   const currentVoiceLines = hall
     ? state.screen === "product"
       ? splitParagraphs(getProductSubtitle(product, state.language))
@@ -527,7 +511,6 @@ const createReadyMarkup = (state) => {
           </button>
           <div class="kiosk-title-strip__center">
             <p class="kiosk-title-strip__title" data-active-category-title>${createActiveCategoryTitleMarkup(activeCategoryTitle, activeIconSrc)}</p>
-            ${createSwipeProgressMarkup(copy, currentSlot, totalSlots)}
           </div>
           <button
             class="kiosk-title-strip__nav kiosk-title-strip__nav--right"
