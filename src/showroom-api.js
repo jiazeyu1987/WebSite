@@ -1,4 +1,6 @@
-export const SHOWROOM_WEBSITE_CONFIG_ENDPOINT = "/showroom/display/website-config"
+export const SHOWROOM_WEBSITE_CONFIG_ENDPOINT =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_SHOWROOM_WEBSITE_CONFIG_ENDPOINT) ||
+  "/showroom/display/website-config"
 
 const requireObject = (value, label) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
