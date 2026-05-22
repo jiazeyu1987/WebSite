@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from "node:fs"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { createMedicalKioskApp } from "./medical-kiosk.js"
+
+const kioskStylesheet = readFileSync("src/medical-kiosk.css", "utf-8")
 
 const createMappedWebsiteConfig = () => ({
   company: {
@@ -227,6 +230,10 @@ const mountApp = (options = {}) => {
 
 describe("createMedicalKioskApp", () => {
   beforeEach(() => {
+    document.head.innerHTML = ""
+    const style = document.createElement("style")
+    style.textContent = kioskStylesheet
+    document.head.append(style)
     document.body.innerHTML = '<div id="app"></div>'
     localStorage.clear()
   })
@@ -420,6 +427,24 @@ describe("createMedicalKioskApp", () => {
 
     expect(root.querySelector(".kiosk-voice__title")).toBeNull()
     expect(root.querySelector("[data-voice-copy]")?.textContent).toContain("English company narration")
+  })
+
+  it("applies the desktop bottom gap and keeps the narration copy inside an internal scroll container", async () => {
+    const root = mountApp({
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
+    })
+    await flush()
+
+    const shell = root.querySelector(".kiosk-shell")
+    const voiceCopy = root.querySelector("[data-voice-copy]")
+    const heroImage = root.querySelector("[data-home-hero-image]")
+
+    expect(shell).not.toBeNull()
+    expect(voiceCopy).not.toBeNull()
+    expect(heroImage).not.toBeNull()
+    expect(getComputedStyle(document.documentElement).getPropertyValue("--kiosk-desktop-bottom-gap").trim()).toBe("45px")
+    expect(getComputedStyle(voiceCopy).overflowY).toBe("auto")
+    expect(getComputedStyle(heroImage).objectFit).toBe("fill")
   })
 
   it("keeps the public narration card mounted while toggling its local controls", async () => {

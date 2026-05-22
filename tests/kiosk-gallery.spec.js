@@ -1,4 +1,14 @@
-﻿import { expect, test } from "@playwright/test"
+import { expect, test } from "@playwright/test"
+
+const LONG_NARRATION_ZH = Array.from(
+  { length: 36 },
+  (_, index) => `第${index + 1}段公开讲解用于验证桌面双列页右栏内部滚动与底部留白。`
+).join("")
+
+const LONG_NARRATION_EN = Array.from(
+  { length: 36 },
+  (_, index) => `Section ${index + 1} of the public narration is intentionally long so the desktop sidebar must scroll internally.`
+).join(" ")
 
 const createProduct = (index) => ({
   productId: 100 + index,
@@ -22,14 +32,18 @@ const createProduct = (index) => ({
   ]
 })
 
-const createApiPayload = ({ cardiologyProducts = 36 } = {}) => ({
+const createApiPayload = ({
+  cardiologyProducts = 36,
+  companySubtitleZh = "Company narration in Chinese",
+  companySubtitleEn = "English company narration"
+} = {}) => ({
   company: {
     companyId: 1,
     name: "Yingtai Medical CN",
     nameEn: "Yingtai Medical",
     homeImageUrl: "https://cdn.example.com/company-home.png",
-    subtitleZh: "Company narration in Chinese",
-    subtitleEn: "English company narration",
+    subtitleZh: companySubtitleZh,
+    subtitleEn: companySubtitleEn,
     audioZhUrl: "https://cdn.example.com/company-zh.mp3",
     audioEnUrl: "https://cdn.example.com/company-en.mp3",
     bilingualPublicFields: [
