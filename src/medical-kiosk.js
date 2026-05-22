@@ -545,7 +545,7 @@ const createErrorMarkup = (language, errorMessage) => {
   `
 }
 
-const createReadyMarkup = (state) => {
+const resolveReadyViewData = (state) => {
   const copy = getUiCopy(state.language)
   const company = state.config.company
   const hall = state.activeHallSlot === 0 ? null : state.config.showrooms[state.activeHallSlot - 1]
@@ -562,55 +562,80 @@ const createReadyMarkup = (state) => {
   const hasAudio = state.audioSource !== ""
   const kioskScreen = state.screen === "product" ? "detail" : "gallery"
 
+  return {
+    copy,
+    company,
+    hall,
+    product,
+    activeCategoryId: state.activeCategoryId,
+    activeCategoryTitle,
+    activeIconSrc,
+    voiceLines,
+    hasAudio,
+    kioskScreen
+  }
+}
+
+const createReadyHeaderMarkup = ({ copy, activeCategoryId, activeCategoryTitle, activeIconSrc }) => `
+  <div class="kiosk-header__halo kiosk-header__halo--left"></div>
+  <div class="kiosk-header__halo kiosk-header__halo--right"></div>
+  <div
+    class="kiosk-title-strip"
+    data-swipe-header
+    data-active-category-id="${activeCategoryId}"
+    data-swipe-dragging="false"
+    data-swipe-axis="idle"
+    style="--kiosk-swipe-shift: 0px;"
+    tabindex="0"
+    role="group"
+    aria-label="${copy.swipeHeaderAria}"
+  >
+    <button
+      class="kiosk-title-strip__nav kiosk-title-strip__nav--left"
+      type="button"
+      data-shift-category="-1"
+      aria-label="${copy.previousHallAria}"
+    >
+      <span class="kiosk-title-strip__chevron kiosk-title-strip__chevron--left" aria-hidden="true"></span>
+    </button>
+    <div class="kiosk-title-strip__center">
+      <p class="kiosk-title-strip__title" data-active-category-title>${createActiveCategoryTitleMarkup(activeCategoryTitle, activeIconSrc)}</p>
+    </div>
+    <button
+      class="kiosk-title-strip__nav kiosk-title-strip__nav--right"
+      type="button"
+      data-shift-category="1"
+      aria-label="${copy.nextHallAria}"
+    >
+      <span class="kiosk-title-strip__chevron kiosk-title-strip__chevron--right" aria-hidden="true"></span>
+    </button>
+  </div>
+`
+
+const createReadyScreenMarkup = (state, { company, hall, product }) =>
+  state.screen === "company"
+    ? createCompanyDetailMarkup(company, state)
+    : state.screen === "product" && hall && product
+      ? createProductDetailMarkup(hall, product, state)
+      : hall
+        ? createGalleryMarkup(hall, state.language)
+        : createHomeHeroMarkup(company, state.language, getUiCopy(state.language))
+
+const createReadyMarkup = (state) => {
+  const readyView = resolveReadyViewData(state)
+  const { copy, voiceLines, hasAudio, kioskScreen } = readyView
+
   return `
     <div class="kiosk-shell" data-reference-layout="medical-kiosk" data-kiosk-screen="${kioskScreen}">
-      <header class="kiosk-header">
-        <div class="kiosk-header__halo kiosk-header__halo--left"></div>
-        <div class="kiosk-header__halo kiosk-header__halo--right"></div>
-        <div
-          class="kiosk-title-strip"
-          data-swipe-header
-          data-active-category-id="${state.activeCategoryId}"
-          data-swipe-dragging="false"
-          data-swipe-axis="idle"
-          style="--kiosk-swipe-shift: 0px;"
-          tabindex="0"
-          role="group"
-          aria-label="${copy.swipeHeaderAria}"
-        >
-          <button
-            class="kiosk-title-strip__nav kiosk-title-strip__nav--left"
-            type="button"
-            data-shift-category="-1"
-            aria-label="${copy.previousHallAria}"
-          >
-            <span class="kiosk-title-strip__chevron kiosk-title-strip__chevron--left" aria-hidden="true"></span>
-          </button>
-          <div class="kiosk-title-strip__center">
-            <p class="kiosk-title-strip__title" data-active-category-title>${createActiveCategoryTitleMarkup(activeCategoryTitle, activeIconSrc)}</p>
-          </div>
-          <button
-            class="kiosk-title-strip__nav kiosk-title-strip__nav--right"
-            type="button"
-            data-shift-category="1"
-            aria-label="${copy.nextHallAria}"
-          >
-            <span class="kiosk-title-strip__chevron kiosk-title-strip__chevron--right" aria-hidden="true"></span>
-          </button>
-        </div>
+      <header class="kiosk-header" data-kiosk-header-region>
+        ${createReadyHeaderMarkup(readyView)}
       </header>
       <main class="kiosk-content" data-responsive-layout="swipe-title landscape-sidebar portrait-bottom-panel">
-        ${
-          state.screen === "company"
-            ? createCompanyDetailMarkup(company, state)
-            : state.screen === "product" && hall && product
-              ? createProductDetailMarkup(hall, product, state)
-              : hall
-                ? createGalleryMarkup(hall, state.language)
-                : createHomeHeroMarkup(company, state.language, copy)
-        }
+        <div data-kiosk-screen-region>
+          ${createReadyScreenMarkup(state, readyView)}
+        </div>
         <section>
-          <div style="display:grid; gap:16px;">
+          <div style="display:grid; gap:16px;" data-kiosk-voice-region>
             ${createVoicePanelMarkup(state, voiceLines, hasAudio)}
           </div>
         </section>
@@ -766,9 +791,52 @@ export const createMedicalKioskApp = (root, options = {}) => {
     state.playbackMessage = copy.voiceIdle
   }
 
+  const syncReadyView = ({ header = true, screen = true, voice = true } = {}) => {
+    const appRoot = root.querySelector(".kiosk-app")
+    const kioskShell = root.querySelector("[data-reference-layout='medical-kiosk']")
+    const headerRegion = root.querySelector("[data-kiosk-header-region]")
+    const screenRegion = root.querySelector("[data-kiosk-screen-region]")
+    const voiceRegion = root.querySelector("[data-kiosk-voice-region]")
+
+    if (
+      state.loadState !== "ready" ||
+      !(appRoot instanceof HTMLElement) ||
+      !(kioskShell instanceof HTMLElement) ||
+      !(headerRegion instanceof HTMLElement) ||
+      !(screenRegion instanceof HTMLElement) ||
+      !(voiceRegion instanceof HTMLElement)
+    ) {
+      return false
+    }
+
+    const readyView = resolveReadyViewData(state)
+
+    appRoot.setAttribute("data-load-state", state.loadState)
+    appRoot.setAttribute("data-language-current", state.language)
+    kioskShell.setAttribute("data-kiosk-screen", readyView.kioskScreen)
+
+    if (header) {
+      headerRegion.innerHTML = createReadyHeaderMarkup(readyView)
+    }
+
+    if (screen) {
+      screenRegion.innerHTML = createReadyScreenMarkup(state, readyView)
+    }
+
+    if (voice) {
+      voiceRegion.innerHTML = createVoicePanelMarkup(state, readyView.voiceLines, readyView.hasAudio)
+    }
+
+    return true
+  }
+
   const render = () => {
     try {
       updateDerivedState()
+      if (syncReadyView()) {
+        return
+      }
+
       root.innerHTML = createAppMarkup(state)
     } catch (error) {
       destroyAudio()
@@ -1073,11 +1141,24 @@ export const createMedicalKioskApp = (root, options = {}) => {
       state.activeAudio.muted = state.isMuted
     }
 
+    updateDerivedState()
+
+    if (syncReadyView({ header: false, screen: state.screen === "product", voice: true })) {
+      return
+    }
+
     render()
   }
 
   const toggleVoicePanel = () => {
     state.isVoicePanelExpanded = !state.isVoicePanelExpanded
+
+    updateDerivedState()
+
+    if (syncReadyView({ header: false, screen: false, voice: true })) {
+      return
+    }
+
     rerenderPreservingBrowseScroll()
   }
 

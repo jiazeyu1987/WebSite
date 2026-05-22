@@ -404,6 +404,38 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-voice-panel]")?.getAttribute("data-voice-panel-expanded")).toBe("false")
   })
 
+  it("keeps the public narration card mounted while toggling its local controls", async () => {
+    const root = mountApp({
+      loadWebsiteConfig: vi.fn().mockResolvedValue(createMappedWebsiteConfig())
+    })
+    await flush()
+
+    const kioskShell = root.querySelector('[data-reference-layout="medical-kiosk"]')
+    const voicePanel = root.querySelector("[data-voice-panel]")
+
+    expect(kioskShell).not.toBeNull()
+    expect(voicePanel).not.toBeNull()
+    expect(root.querySelector("[data-language-toggle-button]")).not.toBeNull()
+    expect(root.querySelector("[data-speech-mute-toggle]")).not.toBeNull()
+
+    root.querySelector("[data-language-toggle-button]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
+
+    expect(root.querySelector('[data-reference-layout="medical-kiosk"]')).not.toBeNull()
+    expect(root.querySelector("[data-voice-panel]")).not.toBeNull()
+    expect(root.querySelector("[data-language-toggle-button]")?.getAttribute("data-language-current")).toBe("en")
+    expect(root.querySelector("[data-active-category-title]")?.textContent).toContain("Home")
+    expect(root.querySelector("[data-voice-copy]")?.textContent).toContain("English company narration")
+
+    root.querySelector("[data-speech-mute-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    await flush()
+
+    expect(root.querySelector('[data-reference-layout="medical-kiosk"]')).not.toBeNull()
+    expect(root.querySelector("[data-voice-panel]")).not.toBeNull()
+    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("data-audio-state")).toBe("muted")
+    expect(root.querySelector("[data-speech-mute-toggle]")?.getAttribute("aria-label")).toBe("Unmute audio")
+  })
+
   it("restores the gallery scroll position after returning from product detail", async () => {
     const originalGetComputedStyle = window.getComputedStyle.bind(window)
     const getComputedStyleSpy = vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
