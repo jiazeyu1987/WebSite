@@ -374,22 +374,22 @@ body::before {
 
 .kiosk-company-detail__reference-layout {
   display: grid;
-  grid-template-columns: minmax(400px, 0.78fr) minmax(0, 1.22fr);
+  grid-template-columns: minmax(430px, 0.84fr) minmax(0, 1.16fr);
   gap: 18px;
   align-items: start;
 }
 
 .kiosk-company-detail__reference-column {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   align-content: start;
   min-height: 0;
 }
 
 .kiosk-company-detail__media-card {
   grid-template-columns: minmax(0, 1fr);
-  padding: 18px;
-  min-height: 372px;
+  padding: 12px;
+  min-height: 392px;
 }
 
 .kiosk-company-detail__cards-panel {
@@ -398,21 +398,26 @@ body::before {
 
 .kiosk-company-detail__play-dock {
   display: grid;
-  gap: 16px;
-  align-content: start;
+  gap: 12px;
+  align-content: center;
   min-height: 0;
-  padding: 18px 20px;
+  padding: 16px 18px;
 }
 
 .kiosk-company-detail__play-dock-copy {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   align-content: start;
+}
+
+.kiosk-company-detail__play-dock .kiosk-detail__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
 }
 
 .kiosk-company-detail__cards-stack {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-height: 0;
 }
 
@@ -488,7 +493,7 @@ body::before {
 .kiosk-company-detail__title {
   margin: 0;
   color: var(--kiosk-primary);
-  font-size: 30px;
+  font-size: 26px;
 }
 
 .kiosk-company-detail__copy {
@@ -510,7 +515,7 @@ body::before {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 360px;
+  min-height: 388px;
   object-fit: cover;
 }
 
@@ -518,8 +523,8 @@ body::before {
   display: grid;
   gap: 10px;
   align-content: start;
-  min-height: 160px;
-  padding: 16px 18px;
+  min-height: 136px;
+  padding: 14px 16px;
   border: 1px solid rgba(95, 138, 221, 0.22);
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(247, 251, 255, 0.98), rgba(238, 245, 255, 0.94));
@@ -545,7 +550,7 @@ body::before {
 .kiosk-company-detail__field dd {
   color: #384866;
   word-break: break-word;
-  line-height: 1.78;
+  line-height: 1.68;
 }
 
 .kiosk-company-detail__empty {

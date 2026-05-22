@@ -462,7 +462,7 @@ test("clicking the home hero opens company detail loaded from IntRuoyi and retur
   await expect(page.locator("[data-home-hero-image]")).toHaveCount(1)
 })
 
-test("reference reflow keeps company detail as left image plus playback and right-side cards", async ({ page }) => {
+test("reference polish keeps company detail as left image plus playback and right-side cards", async ({ page }) => {
   await page.addInitScript(() => {
     class MockAudio {
       constructor(src = "") {
