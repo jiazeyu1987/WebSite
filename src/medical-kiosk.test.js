@@ -16,6 +16,22 @@ const createMappedAppConfig = () => ({
     publicFields: [
       { label: "Milestones", value: "Yingtai growth timeline" },
       { label: "Awards", value: "National high-tech enterprise" }
+    ],
+    bilingualPublicFields: [
+      {
+        fieldCode: "development_history",
+        labelZh: "发展历程",
+        labelEn: "Development History",
+        valueZh: "Yingtai growth timeline",
+        valueEn: "Yingtai growth history"
+      },
+      {
+        fieldCode: "honors_awards",
+        labelZh: "荣誉资质",
+        labelEn: "Honors and Awards",
+        valueZh: "National high-tech enterprise",
+        valueEn: "National high-tech enterprise"
+      }
     ]
   },
   showrooms: [
@@ -71,9 +87,21 @@ const createMappedProductDetail = (productId) => ({
   nameCn: productId === "101" ? "Guidewire System CN" : "Catheter System CN",
   nameEn: productId === "101" ? "Guidewire System" : "Catheter System",
   previewImageUrl: `https://cdn.example.com/product-${productId}.png`,
-  publicFields: [
-    { label: "Target market", value: productId === "101" ? "Cardiology" : "Neurology" },
-    { label: "Registration", value: productId === "101" ? "Cert-A" : "Cert-B" }
+  bilingualPublicFields: [
+    {
+      fieldCode: "target_market",
+      labelZh: "目标市场",
+      labelEn: "Target Market",
+      valueZh: productId === "101" ? "心内" : "神内",
+      valueEn: productId === "101" ? "Cardiology" : "Neurology"
+    },
+    {
+      fieldCode: "core_selling_points",
+      labelZh: "核心卖点",
+      labelEn: "Core Selling Points",
+      valueZh: productId === "101" ? "更顺滑" : "更稳定",
+      valueEn: productId === "101" ? "Smoother delivery" : "More stable support"
+    }
   ]
 })
 
@@ -236,6 +264,8 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-company-detail-panel]")).not.toBeNull()
     expect(root.querySelector("[data-company-detail-title]")?.textContent).toContain("Yingtai Medical")
     expect(root.querySelector("[data-company-detail-copy]")?.textContent).toContain("English company narration")
+    expect(root.textContent).toContain("Development History")
+    expect(root.textContent).toContain("Yingtai growth history")
 
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     await flush()
@@ -273,8 +303,10 @@ describe("createMedicalKioskApp", () => {
     expect(root.querySelector("[data-product-detail-id]")).not.toBeNull()
     expect(root.querySelector("[data-product-detail-title]")?.textContent).toContain("Guidewire System")
     expect(root.querySelectorAll("[data-product-description-line]")).toHaveLength(2)
-    expect(root.textContent).toContain("Target market")
-    expect(root.textContent).toContain("Cert-A")
+    expect(root.textContent).toContain("Target Market")
+    expect(root.textContent).toContain("Cardiology")
+    expect(root.textContent).toContain("Core Selling Points")
+    expect(root.textContent).toContain("Smoother delivery")
 
     root.querySelector("[data-speech-toggle]")?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     await flush()

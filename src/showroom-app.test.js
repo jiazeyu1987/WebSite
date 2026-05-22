@@ -22,6 +22,22 @@ const createApiPayload = () => ({
         label: "\u8363\u8a89\u8d44\u8d28",
         value: "\u56fd\u5bb6\u9ad8\u65b0\u6280\u672f\u4f01\u4e1a"
       }
+    ],
+    bilingualPublicFields: [
+      {
+        fieldCode: "development_history",
+        labelZh: "\u53d1\u5c55\u5386\u7a0b",
+        labelEn: "Development History",
+        valueZh: "\u76c8\u6cf0\u533b\u7597\u53d1\u5c55\u5386\u7a0b",
+        valueEn: "Yingtai growth history"
+      },
+      {
+        fieldCode: "honors_awards",
+        labelZh: "\u8363\u8a89\u8d44\u8d28",
+        labelEn: "Honors and Awards",
+        valueZh: "\u56fd\u5bb6\u9ad8\u65b0\u6280\u672f\u4f01\u4e1a",
+        valueEn: "National high-tech enterprise"
+      }
     ]
   },
   showrooms: []
@@ -118,6 +134,8 @@ describe("createShowroomConsumerApp", () => {
     expect(root.querySelector("[data-company-detail-title]")?.textContent).toContain("Yingtai Medical")
     expect(root.querySelector("[data-company-detail-copy]")?.textContent).toContain("English company narration")
     expect(root.querySelector("[data-company-back]")?.textContent).toContain("Back to home")
+    expect(root.textContent).toContain("Development History")
+    expect(root.textContent).toContain("Yingtai growth history")
 
     const remountedRoot = mountApp({ loadAppConfig, createAudio: vi.fn(() => createAudioController()) })
     await flush()
@@ -207,10 +225,10 @@ describe("createShowroomConsumerApp", () => {
     expect(firstField?.querySelector("[data-company-field-value]")?.textContent).toContain("盈泰医疗发展历程")
   })
 
-  it("shows an explicit error state when company.publicFields is missing", async () => {
+  it("shows an explicit error state when company.bilingualPublicFields is missing", async () => {
     const root = document.getElementById("app")
     const payload = createApiPayload()
-    delete payload.company.publicFields
+    delete payload.company.bilingualPublicFields
 
     createShowroomConsumerApp(root, {
       loadAppConfig: vi.fn().mockResolvedValue(payload)
@@ -219,6 +237,6 @@ describe("createShowroomConsumerApp", () => {
 
     expect(root.querySelector('[data-load-state="error"]')).not.toBeNull()
     expect(root.querySelector('[data-screen="showroom-error"]')).not.toBeNull()
-    expect(root.textContent).toContain("company.publicFields is required.")
+    expect(root.textContent).toContain("company.bilingualPublicFields is required.")
   })
 })

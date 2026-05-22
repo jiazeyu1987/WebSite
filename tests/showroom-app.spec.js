@@ -19,6 +19,22 @@ const createApiPayload = () => ({
         label: "\u8363\u8a89\u8d44\u8d28",
         value: "\u56fd\u5bb6\u9ad8\u65b0\u6280\u672f\u4f01\u4e1a"
       }
+    ],
+    bilingualPublicFields: [
+      {
+        fieldCode: "development_history",
+        labelZh: "\u53d1\u5c55\u5386\u7a0b",
+        labelEn: "Development History",
+        valueZh: "\u76c8\u6cf0\u533b\u7597\u53d1\u5c55\u5386\u7a0b",
+        valueEn: "Yingtai growth history"
+      },
+      {
+        fieldCode: "honors_awards",
+        labelZh: "\u8363\u8a89\u8d44\u8d28",
+        labelEn: "Honors and Awards",
+        valueZh: "\u56fd\u5bb6\u9ad8\u65b0\u6280\u672f\u4f01\u4e1a",
+        valueEn: "National high-tech enterprise"
+      }
     ]
   },
   showrooms: []
@@ -101,6 +117,8 @@ test("keeps the kiosk homepage on root and renders the bilingual showroom compan
   await expect(page.locator("[data-company-detail-copy]")).toContainText("English company narration")
   await expect(page.locator("[data-company-back]")).toContainText("Back to home")
   await expect(page.locator("[data-company-field]")).toHaveCount(2)
+  await expect(page.locator('[data-company-field-index="0"] [data-company-field-label]')).toContainText("Development History")
+  await expect(page.locator('[data-company-field-index="0"] [data-company-field-value]')).toContainText("Yingtai growth history")
 
   await page.locator("[data-company-play]").click()
   await expect(page.locator("[data-company-play-state]")).toContainText("Playing English narration")
@@ -339,10 +357,10 @@ test("mobile showroom detail presents public fields as separated cards", async (
   expect(fieldLayout.backgroundColor).not.toBe("rgba(0, 0, 0, 0)")
 })
 
-test("fails fast on /showroom when company.publicFields is missing from the backend contract", async ({ page }) => {
+test("fails fast on /showroom when company.bilingualPublicFields is missing from the backend contract", async ({ page }) => {
   await page.route("**/showroom/display/app-config", async (route) => {
     const payload = createApiPayload()
-    delete payload.company.publicFields
+    delete payload.company.bilingualPublicFields
 
     await route.fulfill({
       status: 200,
@@ -357,5 +375,5 @@ test("fails fast on /showroom when company.publicFields is missing from the back
 
   await page.goto("/showroom")
   await expect(page.locator('[data-screen="showroom-error"]')).toBeVisible()
-  await expect(page.locator("body")).toContainText("company.publicFields is required.")
+  await expect(page.locator("body")).toContainText("company.bilingualPublicFields is required.")
 })

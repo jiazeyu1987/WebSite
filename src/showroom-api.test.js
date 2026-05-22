@@ -14,6 +14,22 @@ const createAppConfigPayload = () => ({
     publicFields: [
       { label: "Milestones", value: "Yingtai growth timeline" },
       { label: "Awards", value: "National high-tech enterprise" }
+    ],
+    bilingualPublicFields: [
+      {
+        fieldCode: "development_history",
+        labelZh: "发展历程",
+        labelEn: "Development History",
+        valueZh: "Yingtai growth timeline",
+        valueEn: "Yingtai growth history"
+      },
+      {
+        fieldCode: "honors_awards",
+        labelZh: "荣誉资质",
+        labelEn: "Honors and Awards",
+        valueZh: "National high-tech enterprise",
+        valueEn: "National high-tech enterprise"
+      }
     ]
   },
   showrooms: [
@@ -55,6 +71,8 @@ describe("mapShowroomAppConfig", () => {
       { label: "Milestones", value: "Yingtai growth timeline" },
       { label: "Awards", value: "National high-tech enterprise" }
     ])
+    expect(mapped.company.bilingualPublicFields[0].labelEn).toBe("Development History")
+    expect(mapped.company.bilingualPublicFields[0].valueEn).toBe("Yingtai growth history")
     expect(mapped.showrooms).toHaveLength(1)
     expect(mapped.showrooms[0].id).toBe("10")
     expect(mapped.showrooms[0].nameEn).toBe("Cardiology Hall")
@@ -63,9 +81,9 @@ describe("mapShowroomAppConfig", () => {
 
   it("fails fast when company.publicFields is missing", () => {
     const payload = createAppConfigPayload()
-    delete payload.company.publicFields
+    delete payload.company.bilingualPublicFields
 
-    expect(() => mapShowroomAppConfig(payload)).toThrow("company.publicFields is required.")
+    expect(() => mapShowroomAppConfig(payload)).toThrow("company.bilingualPublicFields is required.")
   })
 })
 
@@ -80,6 +98,15 @@ describe("mapShowroomCompanyDetail", () => {
       publicProductFields: [
         { label: "Milestones", value: "Yingtai growth timeline" },
         { label: "Awards", value: "National high-tech enterprise" }
+      ],
+      bilingualPublicFields: [
+        {
+          fieldCode: "development_history",
+          labelZh: "发展历程",
+          labelEn: "Development History",
+          valueZh: "Yingtai growth timeline",
+          valueEn: "Yingtai growth history"
+        }
       ]
     })
 
@@ -88,7 +115,8 @@ describe("mapShowroomCompanyDetail", () => {
     expect(mapped.subtitleZh).toBe("Company narration in Chinese")
     expect(mapped.subtitleEn).toBe("English company narration")
     expect(mapped.homeImage).toBe("https://cdn.example.com/company-home.png")
-    expect(mapped.publicFields).toHaveLength(2)
+    expect(mapped.bilingualPublicFields).toHaveLength(1)
+    expect(mapped.bilingualPublicFields[0].valueEn).toBe("Yingtai growth history")
   })
 
   it("fails fast when company image is missing", () => {
@@ -98,7 +126,8 @@ describe("mapShowroomCompanyDetail", () => {
         titleEn: "Yingtai Medical",
         subtitleZh: "Company narration in Chinese",
         subtitleEn: "English company narration",
-        publicProductFields: []
+        publicProductFields: [],
+        bilingualPublicFields: []
       })
     ).toThrow("company.imageUrl is required.")
   })
@@ -116,6 +145,15 @@ describe("mapShowroomProductDetail", () => {
       publicProductFields: [
         { label: "Target market", value: "Cardiology" },
         { label: "Registration", value: "Cert-A" }
+      ],
+      bilingualPublicFields: [
+        {
+          fieldCode: "target_market",
+          labelZh: "目标市场",
+          labelEn: "Target Market",
+          valueZh: "心内",
+          valueEn: "Cardiology"
+        }
       ]
     })
 
@@ -123,9 +161,14 @@ describe("mapShowroomProductDetail", () => {
     expect(mapped.nameCn).toBe("Guidewire System CN")
     expect(mapped.nameEn).toBe("Guidewire System")
     expect(mapped.previewImageUrl).toBe("https://cdn.example.com/product-101.png")
-    expect(mapped.publicFields).toEqual([
-      { label: "Target market", value: "Cardiology" },
-      { label: "Registration", value: "Cert-A" }
+    expect(mapped.bilingualPublicFields).toEqual([
+      {
+        fieldCode: "target_market",
+        labelZh: "目标市场",
+        labelEn: "Target Market",
+        valueZh: "心内",
+        valueEn: "Cardiology"
+      }
     ])
   })
 
@@ -137,7 +180,8 @@ describe("mapShowroomProductDetail", () => {
           nameCn: "Guidewire System CN",
           nameEn: "Guidewire System"
         },
-        publicProductFields: []
+        publicProductFields: [],
+        bilingualPublicFields: []
       })
     ).toThrow("product.productCard.previewImageUrl is required.")
   })

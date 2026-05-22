@@ -51,6 +51,18 @@ const mapPublicField = (field, fieldIndex) => {
   }
 }
 
+const mapBilingualPublicField = (field, label) => {
+  const fieldObject = requireObject(field, label)
+
+  return {
+    fieldCode: requireString(fieldObject.fieldCode, `${label}.fieldCode`),
+    labelZh: requireString(fieldObject.labelZh, `${label}.labelZh`),
+    labelEn: requireString(fieldObject.labelEn, `${label}.labelEn`),
+    valueZh: requirePresentString(fieldObject.valueZh, `${label}.valueZh`),
+    valueEn: requirePresentString(fieldObject.valueEn, `${label}.valueEn`)
+  }
+}
+
 export const mapShowroomAppConfig = (payload) => {
   const data = requireObject(payload, "app-config payload")
   const company = requireObject(data.company, "company")
@@ -66,7 +78,10 @@ export const mapShowroomAppConfig = (payload) => {
       subtitleEn: requireString(company.subtitleEn, "company.subtitleEn"),
       audioZh: requireString(company.audioZhUrl, "company.audioZhUrl"),
       audioEn: requireString(company.audioEnUrl, "company.audioEnUrl"),
-      publicFields: requireArray(company.publicFields, "company.publicFields").map(mapPublicField)
+      publicFields: requireArray(company.publicFields, "company.publicFields").map(mapPublicField),
+      bilingualPublicFields: requireArray(company.bilingualPublicFields, "company.bilingualPublicFields").map((field, fieldIndex) =>
+        mapBilingualPublicField(field, `company.bilingualPublicFields[${fieldIndex}]`)
+      )
     },
     showrooms: showrooms.map((showroom, showroomIndex) => {
       const showroomObject = requireObject(showroom, `showrooms[${showroomIndex}]`)
@@ -115,7 +130,10 @@ export const mapShowroomCompanyDetail = (payload) => {
         label: requireString(fieldObject.label, `company.publicProductFields[${fieldIndex}].label`),
         value: requireString(fieldObject.value, `company.publicProductFields[${fieldIndex}].value`)
       }
-    })
+    }),
+    bilingualPublicFields: requireArray(data.bilingualPublicFields, "company.bilingualPublicFields").map((field, fieldIndex) =>
+      mapBilingualPublicField(field, `company.bilingualPublicFields[${fieldIndex}]`)
+    )
   }
 }
 
@@ -135,7 +153,10 @@ export const mapShowroomProductDetail = (payload) => {
         label: requireString(fieldObject.label, `product.publicProductFields[${fieldIndex}].label`),
         value: requireString(fieldObject.value, `product.publicProductFields[${fieldIndex}].value`)
       }
-    })
+    }),
+    bilingualPublicFields: requireArray(data.bilingualPublicFields, "product.bilingualPublicFields").map((field, fieldIndex) =>
+      mapBilingualPublicField(field, `product.bilingualPublicFields[${fieldIndex}]`)
+    )
   }
 }
 

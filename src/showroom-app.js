@@ -70,6 +70,18 @@ const persistLanguage = (storage, language) => {
 const getCompanyName = (company, language) => (language === "en" ? company.nameEn : company.name)
 const getCompanySubtitle = (company, language) => (language === "en" ? company.subtitleEn : company.subtitleZh)
 const getCompanyAudioSrc = (company, language) => (language === "en" ? company.audioEn : company.audioZh)
+const getVisibleBilingualFields = (fields, language) => {
+  if (!Array.isArray(fields)) {
+    return []
+  }
+
+  return fields
+    .map((field) => ({
+      label: language === "en" ? field.labelEn : field.labelZh,
+      value: language === "en" ? field.valueEn : field.valueZh
+    }))
+    .filter((field) => typeof field.value === "string" && field.value.trim() !== "")
+}
 
 const getPlaybackMessage = (state) => {
   const copy = getShowroomCopy(state.language)
@@ -174,6 +186,7 @@ const createDetailMarkup = (company, state) => {
   const copy = getShowroomCopy(state.language)
   const companyName = getCompanyName(company, state.language)
   const companySubtitle = getCompanySubtitle(company, state.language)
+  const visibleFields = getVisibleBilingualFields(company.bilingualPublicFields, state.language)
 
   return `
     <section class="showroom-screen showroom-screen--detail" data-screen="company-detail" data-company-detail>
@@ -204,10 +217,10 @@ const createDetailMarkup = (company, state) => {
           </section>
 
           ${
-            company.publicFields.length > 0
+            visibleFields.length > 0
               ? `
                 <dl class="showroom-company-fields" data-company-fields>
-                  ${company.publicFields.map((field, index) => createCompanyFieldMarkup(field, index)).join("")}
+                  ${visibleFields.map((field, index) => createCompanyFieldMarkup(field, index)).join("")}
                 </dl>
               `
               : `

@@ -112,6 +112,19 @@ const getProductName = (product, language) => (isEnglish(language) ? product.nam
 const getProductSubtitle = (product, language) => (isEnglish(language) ? product.subtitleEn : product.subtitleZh)
 const getProductAudioSrc = (product, language) => (isEnglish(language) ? product.audioEn : product.audioZh)
 
+const getVisibleBilingualFields = (fields, language) => {
+  if (!Array.isArray(fields)) {
+    return []
+  }
+
+  return fields
+    .map((field) => ({
+      label: isEnglish(language) ? field.labelEn : field.labelZh,
+      value: isEnglish(language) ? field.valueEn : field.valueZh
+    }))
+    .filter((field) => typeof field.value === "string" && field.value.trim() !== "")
+}
+
 const getHallIconSrc = (hall) => {
   const hallCode = typeof hall?.code === "string" ? hall.code.trim().toLowerCase() : ""
   return SHOWROOM_TITLE_ICON_BY_HALL_CODE[hallCode] ?? null
@@ -258,6 +271,7 @@ const createCompanyDetailMarkup = (company, state) => {
   const copy = getUiCopy(state.language)
   const companyName = getCompanyName(company, state.language)
   const companySubtitle = getCompanySubtitle(company, state.language)
+  const visibleFields = getVisibleBilingualFields(company.bilingualPublicFields, state.language)
 
   return `
     <section class="kiosk-company-detail" data-company-detail-panel>
@@ -271,10 +285,10 @@ const createCompanyDetailMarkup = (company, state) => {
         <img class="kiosk-company-detail__image" src="${company.homeImage}" alt="${companyName}" />
       </div>
       ${
-        company.publicFields.length > 0
+        visibleFields.length > 0
           ? `
             <dl class="kiosk-company-detail__fields" data-company-detail-fields>
-              ${company.publicFields.map((field, index) => createCompanyFieldMarkup(field, index)).join("")}
+              ${visibleFields.map((field, index) => createCompanyFieldMarkup(field, index)).join("")}
             </dl>
           `
           : `
@@ -306,28 +320,13 @@ const createGalleryMarkup = (hall, language) => `
   </section>
 `
 
-const createProductDescriptionLines = (detail, copy) => {
-  if (!detail || detail.publicFields.length === 0) {
-    return `<p data-product-description-line>${copy.productFieldsEmpty}</p>`
-  }
-
-  return detail.publicFields
-    .map(
-      (field, index) => `
-        <p data-product-description-line data-product-field-index="${index}">
-          <strong>${field.label}</strong>: ${field.value}
-        </p>
-      `
-    )
-    .join("")
-}
-
 const createProductDetailMarkup = (hall, product, state) => {
   const copy = getUiCopy(state.language)
   const detail = state.productDetailData
   const productName = getProductName(product, state.language)
   const productSubtitle = getProductSubtitle(product, state.language)
   const hallTitle = getHallName(hall, state.language)
+  const visibleFields = getVisibleBilingualFields(detail?.bilingualPublicFields, state.language)
 
   if (state.productDetailLoadState === "loading") {
     return `
@@ -393,7 +392,19 @@ const createProductDetailMarkup = (hall, product, state) => {
           ${createWaveMarkup(state.playbackStatus === "playing" && !state.isMuted)}
         </div>
         <div class="kiosk-detail__description-copy">
-          ${createProductDescriptionLines(detail, copy)}
+          ${
+            visibleFields.length > 0
+              ? visibleFields
+                  .map(
+                    (field, index) => `
+                      <p data-product-description-line data-product-field-index="${index}">
+                        <strong>${field.label}</strong>: ${field.value}
+                      </p>
+                    `
+                  )
+                  .join("")
+              : `<p data-product-description-line>${copy.productFieldsEmpty}</p>`
+          }
         </div>
       </section>
     </section>

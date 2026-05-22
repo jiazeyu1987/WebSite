@@ -12,6 +12,15 @@ const createAppConfigPayload = () => ({
     audioEnUrl: "https://cdn.example.com/company-en.mp3",
     publicFields: [
       { label: "Milestones", value: "Yingtai growth timeline" }
+    ],
+    bilingualPublicFields: [
+      {
+        fieldCode: "development_history",
+        labelZh: "发展历程",
+        labelEn: "Development History",
+        valueZh: "Yingtai growth timeline",
+        valueEn: "Yingtai growth history"
+      }
     ]
   },
   showrooms: [
@@ -50,6 +59,22 @@ const createProductDetailPayload = () => ({
   publicProductFields: [
     { label: "Target market", value: "Cardiology" },
     { label: "Registration", value: "Cert-A" }
+  ],
+  bilingualPublicFields: [
+    {
+      fieldCode: "target_market",
+      labelZh: "目标市场",
+      labelEn: "Target Market",
+      valueZh: "心内",
+      valueEn: "Cardiology"
+    },
+    {
+      fieldCode: "core_selling_points",
+      labelZh: "核心卖点",
+      labelEn: "Core Selling Points",
+      valueZh: "更顺滑",
+      valueEn: "Smoother delivery"
+    }
   ]
 })
 
@@ -135,6 +160,10 @@ test("opens a kiosk product detail page in English, keeps one voice-header toggl
   await expect(page.locator("[data-product-description-title]")).toContainText("Product Details")
   await expect(page.locator("[data-speaking-state]")).toContainText("Press to play narration")
   await expect(page.locator("[data-product-tag]")).toHaveCount(2)
+  await expect(page.locator("[data-product-description-panel]")).toContainText("Target Market")
+  await expect(page.locator("[data-product-description-panel]")).toContainText("Cardiology")
+  await expect(page.locator("[data-product-description-panel]")).toContainText("Core Selling Points")
+  await expect(page.locator("[data-product-description-panel]")).toContainText("Smoother delivery")
   await expect(page.locator(".kiosk-voice")).toBeVisible()
   await expect(audioToggle).toBeVisible()
   await expect(audioToggle).toHaveAttribute("data-audio-state", "unmuted")
